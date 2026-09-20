@@ -9,11 +9,14 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy dependency definitions
-COPY package.json ./
+# Install libc6-compat for native binary compatibility (e.g. esbuild) across amd64/arm64
+RUN apk add --no-cache libc6-compat
 
-# Install all dependencies including build-time devDependencies (vite, esbuild, typescript)
-RUN npm install
+# Copy dependency definitions
+COPY package.json package-lock.json* ./
+
+# Install all dependencies with --legacy-peer-deps to prevent React 19 peer conflict aborts
+RUN npm install --legacy-peer-deps --no-audit --no-fund
 
 # Copy source code and build configurations
 COPY . .
@@ -22,7 +25,7 @@ COPY . .
 RUN npm run build
 
 # Remove development dependencies to keep production footprint minimal
-RUN npm prune --omit=dev
+RUN npm prune --omit=dev --legacy-peer-deps
 
 # Stage 2: Production Minimal Runtime
 FROM node:20-alpine AS runner
