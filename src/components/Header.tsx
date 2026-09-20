@@ -145,8 +145,9 @@ export function Header({
       </div>
 
       {/* Navigation Tabs - 3 Primary Sections + Utilities */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center gap-1 overflow-x-auto border-t border-zinc-800/80 pt-1.5 pb-1.5 scrollbar-none">
-        {/* Section 1: Appliances & Electronics */}
+      <div className="border-t border-zinc-800/80 bg-zinc-900/95 relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center gap-1.5 overflow-x-auto pt-2 pb-2.5 scroll-smooth no-scrollbar overscroll-x-contain">
+          {/* Section 1: Appliances & Electronics */}
         <button
           onClick={() => onTabChange('appliances_electronics')}
           className={`px-3 py-2 text-xs font-medium rounded-lg whitespace-nowrap transition-all flex items-center gap-2 ${
@@ -245,7 +246,8 @@ export function Header({
           <span>Service Logs</span>
         </button>
       </div>
-    </header>
-  );
+    </div>
+  </header>
+);
 }
 

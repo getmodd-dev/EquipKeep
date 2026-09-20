@@ -517,7 +517,7 @@ export function EquipmentDetailModal({
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex border-b border-zinc-200 dark:border-zinc-800 px-5 bg-white dark:bg-zinc-900 overflow-x-auto scrollbar-none gap-2">
+        <div className="flex border-b border-zinc-200 dark:border-zinc-800 px-4 sm:px-5 bg-white dark:bg-zinc-900 overflow-x-auto no-scrollbar scroll-smooth gap-1 sm:gap-2 shrink-0">
           <button
             onClick={() => setActiveTab('specs')}
             className={`py-3 px-3 text-xs sm:text-sm font-semibold border-b-2 whitespace-nowrap transition-colors flex items-center gap-1.5 ${

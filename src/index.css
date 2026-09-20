@@ -1,1 +1,10 @@
 @import "tailwindcss";
+
+/* Ensure horizontal scroll containers have clean touch and smooth scroll behavior */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
