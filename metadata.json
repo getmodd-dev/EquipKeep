@@ -1,0 +1,6 @@
+{
+  "name": "EquipKeep",
+  "description": "Self-hosted appliance and equipment documentation hub, tracking service history, warranty expirations, and Pushover maintenance alerts.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

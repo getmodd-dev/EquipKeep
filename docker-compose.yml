@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  equipkeep:
+    # Use your published GHCR image, or build locally from source:
+    image: ghcr.io/${GH_USER:-yourusername}/equipkeep:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: equipkeep
+    restart: unless-stopped
+    ports:
+      - '3100:3000'
+    volumes:
+      # Map container data directory to local persistent host storage (e.g., Unraid appdata)
+      - ./data:/app/data
+      # Optional: Map appliance manuals and documents to a dedicated storage share
+      # - /mnt/user/documents/appliances:/data/documents
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      # Optional: Pre-configure Pushover notifications
+      # - PUSHOVER_USER_KEY=your_pushover_user_key
+      # - PUSHOVER_API_TOKEN=your_pushover_api_token
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000/api/health']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s

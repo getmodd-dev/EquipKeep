@@ -1,0 +1,64 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>EquipKeep</Name>
+  <Repository>ghcr.io/yourusername/equipkeep:latest</Repository>
+  <Registry>https://ghcr.io</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/yourusername/equipkeep/issues</Support>
+  <Project>https://github.com/yourusername/equipkeep</Project>
+  <Overview>EquipKeep is a self-hosted home appliance and equipment documentation hub. It organizes manuals, model &amp; serial numbers, filter sizes, warranty expirations, and recurring maintenance tasks with instant Pushover mobile phone alerts.</Overview>
+  <Category>HomeAutomation: Tools: Utilities:</Category>
+  <WebUI>http://[IP]:[PORT:3000]/</WebUI>
+  <TemplateURL/>
+  <Icon>https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/wrench.png</Icon>
+  <ExtraParams>--restart unless-stopped</ExtraParams>
+  <PostArgs/>
+  <CPUset/>
+  <DateInstalled/>
+  <DonateText/>
+  <DonateLink/>
+  <Description>EquipKeep: Home Equipment &amp; Appliance Documentation Hub with Pushover Alerting</Description>
+  <Networking>
+    <Mode>bridge</Mode>
+    <Publish>
+      <Port>
+        <HostPort>3100</HostPort>
+        <ContainerPort>3000</ContainerPort>
+        <Protocol>tcp</Protocol>
+      </Port>
+    </Publish>
+  </Networking>
+  <Data>
+    <Volume>
+      <HostDir>/mnt/user/appdata/equipkeep</HostDir>
+      <ContainerDir>/app/data</ContainerDir>
+      <Mode>rw</Mode>
+    </Volume>
+  </Data>
+  <Environment>
+    <Variable>
+      <Value>production</Value>
+      <Name>NODE_ENV</Name>
+      <Mode/>
+    </Variable>
+    <Variable>
+      <Value/>
+      <Name>PUSHOVER_USER_KEY</Name>
+      <Mode/>
+    </Variable>
+    <Variable>
+      <Value/>
+      <Name>PUSHOVER_API_TOKEN</Name>
+      <Mode/>
+    </Variable>
+  </Environment>
+  <Labels/>
+  <Config Name="Web UI Port" Target="3000" Default="3100" Mode="tcp" Description="Host port to access the EquipKeep Web UI." Type="Port" Display="always" Required="true" Mask="false">3100</Config>
+  <Config Name="Appdata Storage Path" Target="/app/data" Default="/mnt/user/appdata/equipkeep" Mode="rw" Description="Persistent directory for JSON database and uploaded records on your Unraid cache/array." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/equipkeep</Config>
+  <Config Name="Manuals &amp; Documents Share" Target="/data/documents" Default="/mnt/user/documents/appliances" Mode="rw" Description="Optional dedicated user share directory for appliance manuals, diagrams, and photos organized by folder." Type="Path" Display="advanced" Required="false" Mask="false">/mnt/user/documents/appliances</Config>
+  <Config Name="Pushover User Key" Target="PUSHOVER_USER_KEY" Default="" Mode="" Description="Optional default Pushover User Key." Type="Variable" Display="always" Required="false" Mask="true"></Config>
+  <Config Name="Pushover API Token" Target="PUSHOVER_API_TOKEN" Default="" Mode="" Description="Optional default Pushover Application API Token." Type="Variable" Display="always" Required="false" Mask="true"></Config>
+</Container>
