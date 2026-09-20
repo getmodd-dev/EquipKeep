@@ -11,7 +11,7 @@
   <Project>https://github.com/yourusername/equipkeep</Project>
   <Overview>EquipKeep is a self-hosted home appliance and equipment documentation hub. It organizes manuals, model &amp; serial numbers, filter sizes, warranty expirations, and recurring maintenance tasks with instant Pushover mobile phone alerts.</Overview>
   <Category>HomeAutomation: Tools: Utilities:</Category>
-  <WebUI>http://[IP]:[PORT:3000]/</WebUI>
+  <WebUI>http://[IP]:[PORT:3500]/</WebUI>
   <TemplateURL/>
   <Icon>https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/wrench.png</Icon>
   <ExtraParams>--restart unless-stopped</ExtraParams>
@@ -25,7 +25,7 @@
     <Mode>bridge</Mode>
     <Publish>
       <Port>
-        <HostPort>3100</HostPort>
+        <HostPort>3500</HostPort>
         <ContainerPort>3000</ContainerPort>
         <Protocol>tcp</Protocol>
       </Port>
@@ -56,7 +56,7 @@
     </Variable>
   </Environment>
   <Labels/>
-  <Config Name="Web UI Port" Target="3000" Default="3100" Mode="tcp" Description="Host port to access the EquipKeep Web UI." Type="Port" Display="always" Required="true" Mask="false">3100</Config>
+  <Config Name="Web UI Port" Target="3000" Default="3500" Mode="tcp" Description="Host port to access the EquipKeep Web UI (Host 3500 -> Container 3000)." Type="Port" Display="always" Required="true" Mask="false">3500</Config>
   <Config Name="Appdata Storage Path" Target="/app/data" Default="/mnt/user/appdata/equipkeep" Mode="rw" Description="Persistent directory for JSON database and uploaded records on your Unraid cache/array." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/equipkeep</Config>
   <Config Name="Manuals &amp; Documents Share" Target="/data/documents" Default="/mnt/user/documents/appliances" Mode="rw" Description="Optional dedicated user share directory for appliance manuals, diagrams, and photos organized by folder." Type="Path" Display="advanced" Required="false" Mask="false">/mnt/user/documents/appliances</Config>
   <Config Name="Pushover User Key" Target="PUSHOVER_USER_KEY" Default="" Mode="" Description="Optional default Pushover User Key." Type="Variable" Display="always" Required="false" Mask="true"></Config>

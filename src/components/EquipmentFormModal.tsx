@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { X, Wrench, Shield, Sparkles, Plus, Trash2 } from 'lucide-react';
-import { Equipment, EquipmentCategory, WarrantyType } from '../types';
-import { CATEGORIES } from '../utils/categories';
+import { X, Wrench, Shield, Sparkles, Plus, Trash2, Tv, Tractor, UserCheck, Phone, Building2 } from 'lucide-react';
+import { Equipment, EquipmentCategory, EquipmentSection, WarrantyType } from '../types';
+import { CATEGORIES, getEquipmentSection } from '../utils/categories';
 import { getTodayDateString, addDaysToDate } from '../utils/date';
 
 interface EquipmentFormModalProps {
@@ -9,6 +9,7 @@ interface EquipmentFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (equipment: Partial<Equipment>) => void;
+  defaultSection?: EquipmentSection;
 }
 
 const PRESETS: Record<
@@ -106,14 +107,24 @@ export function EquipmentFormModal({
   isOpen,
   onClose,
   onSave,
+  defaultSection,
 }: EquipmentFormModalProps) {
   if (!isOpen) return null;
+
+  const initialSection: EquipmentSection =
+    equipmentToEdit?.section ||
+    defaultSection ||
+    (equipmentToEdit?.category ? getEquipmentSection(equipmentToEdit.category) : 'appliances_electronics');
+
+  const initialCategory: EquipmentCategory =
+    equipmentToEdit?.category || (initialSection === 'large_equipment' ? 'hvac' : 'kitchen');
 
   const [name, setName] = useState(equipmentToEdit?.name || '');
   const [brand, setBrand] = useState(equipmentToEdit?.brand || '');
   const [modelNumber, setModelNumber] = useState(equipmentToEdit?.modelNumber || '');
   const [serialNumber, setSerialNumber] = useState(equipmentToEdit?.serialNumber || '');
-  const [category, setCategory] = useState<EquipmentCategory>(equipmentToEdit?.category || 'kitchen');
+  const [category, setCategory] = useState<EquipmentCategory>(initialCategory);
+  const [section, setSection] = useState<EquipmentSection>(initialSection);
   const [locationRoom, setLocationRoom] = useState(equipmentToEdit?.locationRoom || '');
   const [purchaseDate, setPurchaseDate] = useState(equipmentToEdit?.purchaseDate || getTodayDateString());
   const [purchasePrice, setPurchasePrice] = useState<string>(
@@ -135,6 +146,20 @@ export function EquipmentFormModal({
   const [warrantyContact, setWarrantyContact] = useState(equipmentToEdit?.warranty?.contactPhoneOrUrl || '');
   const [warrantyNotes, setWarrantyNotes] = useState(equipmentToEdit?.warranty?.notes || '');
 
+  // Contractor / Maintenance Technician & Contact Phone Number
+  const [contractorName, setContractorName] = useState(
+    equipmentToEdit?.contractor?.name || equipmentToEdit?.contractorName || ''
+  );
+  const [contractorPhone, setContractorPhone] = useState(
+    equipmentToEdit?.contractor?.phone || equipmentToEdit?.contractorPhone || ''
+  );
+  const [contractorCompany, setContractorCompany] = useState(
+    equipmentToEdit?.contractor?.company || ''
+  );
+  const [contractorNotes, setContractorNotes] = useState(
+    equipmentToEdit?.contractor?.notes || ''
+  );
+
   // Specs
   const [filterSize, setFilterSize] = useState(equipmentToEdit?.specifications?.filterSize || '');
   const [powerRequirements, setPowerRequirements] = useState(
@@ -145,12 +170,50 @@ export function EquipmentFormModal({
   // Pre-configured maintenance tasks for new items
   const [tasks, setTasks] = useState<any[]>(equipmentToEdit?.maintenanceTasks || []);
 
+  useEffect(() => {
+    if (equipmentToEdit) {
+      setName(equipmentToEdit.name || '');
+      setBrand(equipmentToEdit.brand || '');
+      setModelNumber(equipmentToEdit.modelNumber || '');
+      setSerialNumber(equipmentToEdit.serialNumber || '');
+      setCategory(equipmentToEdit.category || 'kitchen');
+      setSection(
+        equipmentToEdit.section ||
+          defaultSection ||
+          (equipmentToEdit.category ? getEquipmentSection(equipmentToEdit.category) : 'appliances_electronics')
+      );
+      setLocationRoom(equipmentToEdit.locationRoom || '');
+      setPurchaseDate(equipmentToEdit.purchaseDate || getTodayDateString());
+      setPurchasePrice(equipmentToEdit.purchasePrice !== undefined ? String(equipmentToEdit.purchasePrice) : '');
+      setVendorStore(equipmentToEdit.vendorStore || '');
+      setStatus(equipmentToEdit.status || 'operational');
+      setWarrantyType(equipmentToEdit.warranty?.type || 'manufacturer');
+      setHasLifetimeWarranty(
+        equipmentToEdit.warranty?.hasLifetimeWarranty || equipmentToEdit.warranty?.type === 'lifetime' || false
+      );
+      setWarrantyExpirationDate(equipmentToEdit.warranty?.expirationDate || addDaysToDate(getTodayDateString(), 365));
+      setWarrantyProvider(equipmentToEdit.warranty?.provider || '');
+      setWarrantyPolicyNumber(equipmentToEdit.warranty?.policyNumber || '');
+      setWarrantyContact(equipmentToEdit.warranty?.contactPhoneOrUrl || '');
+      setWarrantyNotes(equipmentToEdit.warranty?.notes || '');
+      setContractorName(equipmentToEdit.contractor?.name || equipmentToEdit.contractorName || '');
+      setContractorPhone(equipmentToEdit.contractor?.phone || equipmentToEdit.contractorPhone || '');
+      setContractorCompany(equipmentToEdit.contractor?.company || '');
+      setContractorNotes(equipmentToEdit.contractor?.notes || '');
+      setFilterSize(equipmentToEdit.specifications?.filterSize || '');
+      setPowerRequirements(equipmentToEdit.specifications?.powerRequirements || '');
+      setNotes(equipmentToEdit.notes || '');
+      setTasks(equipmentToEdit.maintenanceTasks || []);
+    }
+  }, [equipmentToEdit, defaultSection]);
+
   const handleApplyPreset = (key: string) => {
     const preset = PRESETS[key];
     if (!preset) return;
 
     setName(preset.name);
     setCategory(preset.category);
+    setSection(getEquipmentSection(preset.category));
     if (preset.filterSize) setFilterSize(preset.filterSize);
 
     const exp = addDaysToDate(purchaseDate || getTodayDateString(), preset.warrantyYears * 365);
@@ -178,11 +241,20 @@ export function EquipmentFormModal({
       modelNumber: modelNumber.trim(),
       serialNumber: serialNumber.trim(),
       category,
+      section,
       locationRoom: locationRoom.trim() || 'Unassigned',
       purchaseDate,
       purchasePrice: purchasePrice ? parseFloat(purchasePrice) : undefined,
       vendorStore: vendorStore.trim() || undefined,
       status: status as any,
+      contractor: {
+        name: contractorName.trim() || undefined,
+        company: contractorCompany.trim() || undefined,
+        phone: contractorPhone.trim() || undefined,
+        notes: contractorNotes.trim() || undefined,
+      },
+      contractorName: contractorName.trim() || undefined,
+      contractorPhone: contractorPhone.trim() || undefined,
       warranty: {
         type: hasLifetimeWarranty ? 'lifetime' : warrantyType,
         expirationDate: hasLifetimeWarranty ? '' : warrantyExpirationDate,
@@ -252,9 +324,49 @@ export function EquipmentFormModal({
 
           {/* Core Identification */}
           <div className="space-y-3">
-            <h3 className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-              Basic Identification
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                Basic Identification
+              </h3>
+            </div>
+
+            {/* Section Assignment */}
+            <div className="p-3 bg-zinc-50 dark:bg-zinc-950/60 rounded-xl border border-zinc-200 dark:border-zinc-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+              <div>
+                <span className="font-semibold text-zinc-900 dark:text-zinc-100 text-xs block">
+                  Application Section *
+                </span>
+                <span className="text-[11px] text-zinc-500">
+                  Organize item into the dedicated section requested for your home
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 p-1 bg-zinc-200/80 dark:bg-zinc-800 rounded-lg">
+                <button
+                  type="button"
+                  onClick={() => setSection('appliances_electronics')}
+                  className={`px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+                    section === 'appliances_electronics'
+                      ? 'bg-white dark:bg-zinc-900 text-orange-600 dark:text-orange-400 shadow-xs'
+                      : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                  }`}
+                >
+                  <Tv className="w-3.5 h-3.5" />
+                  Appliances & Electronics
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSection('large_equipment')}
+                  className={`px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+                    section === 'large_equipment'
+                      ? 'bg-white dark:bg-zinc-900 text-orange-600 dark:text-orange-400 shadow-xs'
+                      : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                  }`}
+                >
+                  <Tractor className="w-3.5 h-3.5" />
+                  Large Equipment
+                </button>
+              </div>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
               <div className="sm:col-span-2">
@@ -507,6 +619,102 @@ export function EquipmentFormModal({
                   onChange={(e) => setWarrantyNotes(e.target.value)}
                   placeholder="e.g. Covers parts and compressor only, labor excluded after year 1."
                   rows={2}
+                  className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Dedicated Contractor / Maintenance Technician Section */}
+          <div className="space-y-3 pt-3 border-t border-zinc-200 dark:border-zinc-800">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-lg bg-orange-100 dark:bg-orange-950/70 flex items-center justify-center text-orange-600 dark:text-orange-400">
+                  <UserCheck className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wider">
+                    Contractor & Maintenance Technician
+                  </h3>
+                </div>
+              </div>
+              {section === 'large_equipment' ? (
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800/80 flex items-center gap-1">
+                  <Tractor className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                  Primary Service Contact for Large Equipment
+                </span>
+              ) : (
+                <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-medium">
+                  Assigned technician, trade specialist, or repair shop
+                </span>
+              )}
+            </div>
+
+            <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+              Save your dedicated maintenance technician, certified contractor, or trade professional and their direct contact phone number for quick service scheduling and emergency dispatch.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-zinc-600 dark:text-zinc-400 font-medium mb-1">
+                  Technician / Contractor Name
+                </label>
+                <div className="relative">
+                  <UserCheck className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-2.5" />
+                  <input
+                    type="text"
+                    value={contractorName}
+                    onChange={(e) => setContractorName(e.target.value)}
+                    placeholder="e.g. Dave Miller / Certified Tech"
+                    className="w-full pl-8 pr-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-zinc-600 dark:text-zinc-400 font-medium mb-1 flex items-center justify-between">
+                  <span>Contact Phone Number</span>
+                  {contractorPhone && (
+                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">Direct Dial Ready</span>
+                  )}
+                </label>
+                <div className="relative">
+                  <Phone className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-2.5" />
+                  <input
+                    type="tel"
+                    value={contractorPhone}
+                    onChange={(e) => setContractorPhone(e.target.value)}
+                    placeholder="e.g. (555) 382-9910"
+                    className="w-full pl-8 pr-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="sm:col-span-2 md:col-span-1">
+                <label className="block text-zinc-600 dark:text-zinc-400 font-medium mb-1">
+                  Company / Organization
+                </label>
+                <div className="relative">
+                  <Building2 className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-2.5" />
+                  <input
+                    type="text"
+                    value={contractorCompany}
+                    onChange={(e) => setContractorCompany(e.target.value)}
+                    placeholder="e.g. All-Star HVAC / Apex Plumbing"
+                    className="w-full pl-8 pr-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900"
+                  />
+                </div>
+              </div>
+
+              <div className="sm:col-span-2 md:col-span-3">
+                <label className="block text-zinc-600 dark:text-zinc-400 font-medium mb-1">
+                  Contractor Notes, Account # & Dispatch Instructions
+                </label>
+                <input
+                  type="text"
+                  value={contractorNotes}
+                  onChange={(e) => setContractorNotes(e.target.value)}
+                  placeholder="e.g. 24/7 emergency dispatch line, maintenance agreement #HVAC-4401, prefers text for booking"
                   className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900"
                 />
               </div>

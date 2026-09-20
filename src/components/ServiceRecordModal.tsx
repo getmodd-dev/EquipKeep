@@ -138,9 +138,24 @@ export function ServiceRecordModal({
             </div>
 
             <div>
-              <label className="block text-zinc-600 dark:text-zinc-400 font-medium mb-1">
-                Technician / Performed By
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-zinc-600 dark:text-zinc-400 font-medium">
+                  Technician / Performed By
+                </label>
+                {(selectedEquipment?.contractor?.name || selectedEquipment?.contractorName) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const techName = selectedEquipment?.contractor?.name || selectedEquipment?.contractorName || '';
+                      const techPhone = selectedEquipment?.contractor?.phone || selectedEquipment?.contractorPhone || '';
+                      setTechnicianOrCompany(techPhone ? `${techName} (${techPhone})` : techName);
+                    }}
+                    className="text-[11px] font-semibold text-orange-600 dark:text-orange-400 hover:underline"
+                  >
+                    Use: {selectedEquipment?.contractor?.name || selectedEquipment?.contractorName}
+                  </button>
+                )}
+              </div>
               <input
                 type="text"
                 value={technicianOrCompany}

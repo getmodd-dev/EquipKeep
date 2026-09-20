@@ -10,7 +10,7 @@ services:
     container_name: equipkeep
     restart: unless-stopped
     ports:
-      - '3100:3000'
+      - '3500:3000'
     volumes:
       # Map container data directory to local persistent host storage (e.g., Unraid appdata)
       - ./data:/app/data

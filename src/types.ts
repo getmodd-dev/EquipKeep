@@ -9,6 +9,8 @@ export type EquipmentCategory =
   | 'smart_home'
   | 'other';
 
+export type EquipmentSection = 'appliances_electronics' | 'large_equipment';
+
 export type EquipmentStatus =
   | 'operational'
   | 'maintenance_due'
@@ -77,6 +79,14 @@ export interface ServiceRecord {
   createdAt: string;
 }
 
+export interface ContractorInfo {
+  name?: string;
+  company?: string;
+  phone?: string;
+  email?: string;
+  notes?: string;
+}
+
 export interface Equipment {
   id: string;
   name: string;
@@ -84,11 +94,15 @@ export interface Equipment {
   modelNumber: string;
   serialNumber: string;
   category: EquipmentCategory;
+  section?: EquipmentSection;
   locationRoom: string;
   purchaseDate: string;
   purchasePrice?: number;
   vendorStore?: string;
   status: EquipmentStatus;
+  contractor?: ContractorInfo;
+  contractorName?: string;
+  contractorPhone?: string;
   warranty: {
     type: WarrantyType;
     expirationDate: string;
@@ -169,3 +183,47 @@ export interface AlertNotification {
   date: string;
   sentToPushover?: boolean;
 }
+
+export type ProjectCategory =
+  | 'gutters_roof'
+  | 'painting_exterior'
+  | 'painting_interior'
+  | 'landscaping_grounds'
+  | 'deck_patio'
+  | 'pressure_washing'
+  | 'seasonal_prep'
+  | 'general_home';
+
+export type ProjectStatus = 'planned' | 'scheduled' | 'in_progress' | 'completed';
+export type ProjectRecurrence = 'one_time' | 'seasonal_spring' | 'seasonal_fall' | 'biannual' | 'annual' | 'multi_year';
+
+export interface ProjectChecklistItem {
+  id: string;
+  text: string;
+  completed: boolean;
+}
+
+export interface HomeProject {
+  id: string;
+  title: string;
+  category: ProjectCategory;
+  description?: string;
+  targetDate: string; // YYYY-MM-DD
+  season?: 'spring' | 'summer' | 'fall' | 'winter' | 'year_round';
+  status: ProjectStatus;
+  priority: 'low' | 'normal' | 'high';
+  recurrence: ProjectRecurrence;
+  estimatedCost?: number;
+  actualCost?: number;
+  assignedType: 'diy' | 'contractor';
+  contractorName?: string;
+  contractorContact?: string;
+  contractorQuote?: string;
+  materialsNeeded?: string;
+  checklist: ProjectChecklistItem[];
+  notes?: string;
+  lastCompletedDate?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+

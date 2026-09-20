@@ -1,15 +1,39 @@
-import { Wrench, Shield, Calendar, History, Plus, Bell, Settings, HardDrive, BellRing } from 'lucide-react';
+import {
+  Wrench,
+  Shield,
+  Calendar,
+  History,
+  Plus,
+  Bell,
+  Settings,
+  HardDrive,
+  BellRing,
+  Tv,
+  Tractor,
+  ClipboardList,
+} from 'lucide-react';
 import { PushoverConfig } from '../types';
 
+export type AppTab =
+  | 'appliances_electronics'
+  | 'large_equipment'
+  | 'projects'
+  | 'maintenance'
+  | 'warranties'
+  | 'service_logs';
+
 interface HeaderProps {
-  activeTab: 'equipment' | 'warranties' | 'maintenance' | 'service_logs';
-  onTabChange: (tab: 'equipment' | 'warranties' | 'maintenance' | 'service_logs') => void;
+  activeTab: AppTab;
+  onTabChange: (tab: AppTab) => void;
   onAddEquipment: () => void;
   onOpenSettings: () => void;
   onTriggerPushoverScan: () => void;
   isScanningPushover: boolean;
   overdueCount: number;
   expiringWarrantyCount: number;
+  appliancesCount: number;
+  largeEquipmentCount: number;
+  projectsCount: number;
   pushoverConfig?: PushoverConfig;
 }
 
@@ -22,6 +46,9 @@ export function Header({
   isScanningPushover,
   overdueCount,
   expiringWarrantyCount,
+  appliancesCount,
+  largeEquipmentCount,
+  projectsCount,
   pushoverConfig,
 }: HeaderProps) {
   const isPushoverConfigured = Boolean(pushoverConfig?.userKey && pushoverConfig?.apiToken);
@@ -37,7 +64,9 @@ export function Header({
           </span>
           <span className="font-mono text-zinc-300">Unraid Local Server</span>
           <span className="hidden sm:inline text-zinc-600">•</span>
-          <span className="hidden sm:inline font-mono text-zinc-400">Web Portal :3000</span>
+          <span className="inline-flex items-center gap-1 font-mono text-orange-400 font-semibold bg-orange-950/50 px-1.5 py-0.5 rounded border border-orange-900/60">
+            Port :3500 (Host)
+          </span>
           <span className="hidden md:inline text-zinc-600">•</span>
           <span className="hidden md:inline text-zinc-400">All Devices on LAN</span>
         </div>
@@ -79,7 +108,7 @@ export function Header({
                 Homelab Hub
               </span>
             </div>
-            <p className="text-xs text-zinc-400">Appliances, Manuals & Service Records</p>
+            <p className="text-xs text-zinc-400">Appliances, Equipment & Project Scheduling</p>
           </div>
         </div>
 
@@ -98,7 +127,7 @@ export function Header({
 
           <button
             onClick={onOpenSettings}
-            title="Pushover API Settings & Unraid Backup"
+            title="Pushover API Settings, Storage & Unraid Setup"
             className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 transition-colors"
             aria-label="Settings"
           >
@@ -110,71 +139,113 @@ export function Header({
             className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg bg-orange-600 hover:bg-orange-500 text-white shadow-md shadow-orange-900/30 transition-colors"
           >
             <Plus className="w-4 h-4" />
-            <span>Add Equipment</span>
+            <span>Add Item</span>
           </button>
         </div>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center gap-1 overflow-x-auto border-t border-zinc-800/80 pt-1 pb-1 scrollbar-none">
+      {/* Navigation Tabs - 3 Primary Sections + Utilities */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center gap-1 overflow-x-auto border-t border-zinc-800/80 pt-1.5 pb-1.5 scrollbar-none">
+        {/* Section 1: Appliances & Electronics */}
         <button
-          onClick={() => onTabChange('equipment')}
-          className={`px-3 py-2 text-xs font-medium rounded-md whitespace-nowrap transition-colors flex items-center gap-1.5 ${
-            activeTab === 'equipment'
-              ? 'bg-zinc-800 text-orange-400 font-semibold shadow-sm'
+          onClick={() => onTabChange('appliances_electronics')}
+          className={`px-3 py-2 text-xs font-medium rounded-lg whitespace-nowrap transition-all flex items-center gap-2 ${
+            activeTab === 'appliances_electronics'
+              ? 'bg-orange-500/15 text-orange-400 font-bold border border-orange-500/30 shadow-xs'
+              : 'text-zinc-300 hover:text-white hover:bg-zinc-800/60'
+          }`}
+        >
+          <Tv className="w-3.5 h-3.5 text-amber-400" />
+          <span>Appliances & Electronics</span>
+          <span className="px-1.5 py-0.2 rounded-full text-[10px] font-semibold bg-zinc-800 text-zinc-300 border border-zinc-700">
+            {appliancesCount}
+          </span>
+        </button>
+
+        {/* Section 2: Large Equipment */}
+        <button
+          onClick={() => onTabChange('large_equipment')}
+          className={`px-3 py-2 text-xs font-medium rounded-lg whitespace-nowrap transition-all flex items-center gap-2 ${
+            activeTab === 'large_equipment'
+              ? 'bg-orange-500/15 text-orange-400 font-bold border border-orange-500/30 shadow-xs'
+              : 'text-zinc-300 hover:text-white hover:bg-zinc-800/60'
+          }`}
+        >
+          <Tractor className="w-3.5 h-3.5 text-orange-400" />
+          <span>Large Equipment</span>
+          <span className="px-1.5 py-0.2 rounded-full text-[10px] font-semibold bg-zinc-800 text-zinc-300 border border-zinc-700">
+            {largeEquipmentCount}
+          </span>
+        </button>
+
+        {/* Section 3: Project Planning & Scheduling */}
+        <button
+          onClick={() => onTabChange('projects')}
+          className={`px-3 py-2 text-xs font-medium rounded-lg whitespace-nowrap transition-all flex items-center gap-2 ${
+            activeTab === 'projects'
+              ? 'bg-orange-500/15 text-orange-400 font-bold border border-orange-500/30 shadow-xs'
+              : 'text-zinc-300 hover:text-white hover:bg-zinc-800/60'
+          }`}
+        >
+          <ClipboardList className="w-3.5 h-3.5 text-emerald-400" />
+          <span>Project Planning & Scheduling</span>
+          <span className="px-1.5 py-0.2 rounded-full text-[10px] font-semibold bg-emerald-950/60 text-emerald-400 border border-emerald-800/50">
+            {projectsCount}
+          </span>
+        </button>
+
+        <div className="h-4 w-px bg-zinc-800 mx-1 shrink-0" />
+
+        {/* Maintenance Schedule */}
+        <button
+          onClick={() => onTabChange('maintenance')}
+          className={`px-2.5 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap transition-colors flex items-center gap-1.5 relative ${
+            activeTab === 'maintenance'
+              ? 'bg-zinc-800 text-orange-400 font-semibold shadow-xs'
               : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
           }`}
         >
-          <Wrench className="w-3.5 h-3.5" />
-          <span>Equipment & Manuals</span>
+          <Calendar className="w-3.5 h-3.5" />
+          <span>Maintenance</span>
+          {overdueCount > 0 && (
+            <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">
+              {overdueCount} due
+            </span>
+          )}
         </button>
 
+        {/* Warranty Tracker */}
         <button
           onClick={() => onTabChange('warranties')}
-          className={`px-3 py-2 text-xs font-medium rounded-md whitespace-nowrap transition-colors flex items-center gap-1.5 relative ${
+          className={`px-2.5 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap transition-colors flex items-center gap-1.5 relative ${
             activeTab === 'warranties'
-              ? 'bg-zinc-800 text-orange-400 font-semibold shadow-sm'
+              ? 'bg-zinc-800 text-orange-400 font-semibold shadow-xs'
               : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
           }`}
         >
           <Shield className="w-3.5 h-3.5" />
-          <span>Warranty Tracker</span>
+          <span>Warranties</span>
           {expiringWarrantyCount > 0 && (
-            <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+            <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
               {expiringWarrantyCount}
             </span>
           )}
         </button>
 
-        <button
-          onClick={() => onTabChange('maintenance')}
-          className={`px-3 py-2 text-xs font-medium rounded-md whitespace-nowrap transition-colors flex items-center gap-1.5 relative ${
-            activeTab === 'maintenance'
-              ? 'bg-zinc-800 text-orange-400 font-semibold shadow-sm'
-              : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
-          }`}
-        >
-          <Calendar className="w-3.5 h-3.5" />
-          <span>Maintenance Schedule</span>
-          {overdueCount > 0 && (
-            <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">
-              {overdueCount} overdue
-            </span>
-          )}
-        </button>
-
+        {/* Service Logs */}
         <button
           onClick={() => onTabChange('service_logs')}
-          className={`px-3 py-2 text-xs font-medium rounded-md whitespace-nowrap transition-colors flex items-center gap-1.5 ${
+          className={`px-2.5 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap transition-colors flex items-center gap-1.5 ${
             activeTab === 'service_logs'
-              ? 'bg-zinc-800 text-orange-400 font-semibold shadow-sm'
+              ? 'bg-zinc-800 text-orange-400 font-semibold shadow-xs'
               : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
           }`}
         >
           <History className="w-3.5 h-3.5" />
-          <span>Service History Logs</span>
+          <span>Service Logs</span>
         </button>
       </div>
     </header>
   );
 }
+

@@ -63,12 +63,12 @@ By default, GitHub creates new container images as **Private**. To allow your Un
    - **Name:** `EquipKeep`
    - **Repository:** `ghcr.io/<your-github-username>/<your-repo-name>:latest`
    - **Network Type:** `bridge`
-   - **WebUI:** `http://[IP]:[PORT:3000]/`
+   - **WebUI:** `http://[IP]:[PORT:3500]/`
    - **Icon URL:** `https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/wrench.png`
 4. Click **Add another Path, Port, Variable, or Device**:
    - **Port:**
      - Container Port: `3000`
-     - Host Port: `3000`
+     - Host Port: `3500` *(prevents conflict with existing port 3000 applications)*
    - **Path (Volume):**
      - Container Path: `/app/data`
      - Host Path: `/mnt/user/appdata/equipkeep`
@@ -95,7 +95,7 @@ You can run this directly in the Unraid terminal:
 docker run -d \
   --name equipkeep \
   --restart unless-stopped \
-  -p 3000:3000 \
+  -p 3500:3000 \
   -v /mnt/user/appdata/equipkeep:/app/data \
   -e NODE_ENV=production \
   ghcr.io/<your-github-username>/equipkeep:latest

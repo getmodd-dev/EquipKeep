@@ -12,9 +12,12 @@ import {
   Layers,
   Sparkles,
   Server,
-  QrCode
+  QrCode,
+  Tv,
+  Tractor,
+  ClipboardList,
 } from 'lucide-react';
-import { Header } from './components/Header';
+import { Header, AppTab } from './components/Header';
 import { EquipmentCard } from './components/EquipmentCard';
 import { EquipmentDetailModal } from './components/EquipmentDetailModal';
 import { EquipmentFormModal } from './components/EquipmentFormModal';
@@ -24,14 +27,16 @@ import { MaintenanceScheduleView } from './components/MaintenanceScheduleView';
 import { ServiceLogsView } from './components/ServiceLogsView';
 import { PushoverSettingsModal } from './components/PushoverSettingsModal';
 import { QRCodeModal } from './components/QRCodeModal';
+import { ProjectPlanningView } from './components/ProjectPlanningView';
 import { ToastContainer, ToastMessage } from './components/Toast';
-import { Equipment, ServiceRecord, PushoverConfig, MaintenanceTask } from './types';
-import { CATEGORIES } from './utils/categories';
-import { getWarrantyStatus, getDaysDifference } from './utils/date';
+import { Equipment, ServiceRecord, PushoverConfig, MaintenanceTask, HomeProject, EquipmentSection } from './types';
+import { CATEGORIES, getEquipmentSection, EQUIPMENT_SECTIONS } from './utils/categories';
+import { getWarrantyStatus, getDaysDifference, getTodayDateString } from './utils/date';
 
 export default function App() {
   const [equipmentList, setEquipmentList] = useState<Equipment[]>([]);
   const [serviceRecords, setServiceRecords] = useState<ServiceRecord[]>([]);
+  const [projects, setProjects] = useState<HomeProject[]>([]);
   const [settings, setSettings] = useState<PushoverConfig>({
     userKey: '',
     apiToken: '',
@@ -42,12 +47,13 @@ export default function App() {
   });
 
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'equipment' | 'warranties' | 'maintenance' | 'service_logs'>('equipment');
+  const [activeTab, setActiveTab] = useState<AppTab>('appliances_electronics');
 
   // Modals state
   const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null);
   const [isEquipmentFormOpen, setIsEquipmentFormOpen] = useState(false);
   const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(null);
+  const [formDefaultSection, setFormDefaultSection] = useState<EquipmentSection>('appliances_electronics');
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
   const [serviceTargetEquipment, setServiceTargetEquipment] = useState<Equipment | null>(null);
   const [serviceTargetTask, setServiceTargetTask] = useState<MaintenanceTask | null>(null);
@@ -79,10 +85,11 @@ export default function App() {
   // Fetch initial data
   const fetchData = async () => {
     try {
-      const [eqRes, srvRes, setRes] = await Promise.all([
+      const [eqRes, srvRes, setRes, projRes] = await Promise.all([
         fetch('/api/equipment'),
         fetch('/api/service-records'),
         fetch('/api/settings'),
+        fetch('/api/projects'),
       ]);
 
       if (eqRes.ok) {
@@ -96,6 +103,10 @@ export default function App() {
       if (setRes.ok) {
         const setData = await setRes.json();
         setSettings(setData);
+      }
+      if (projRes.ok) {
+        const projData = await projRes.json();
+        setProjects(projData);
       }
     } catch (err) {
       console.error('Error fetching data:', err);
@@ -135,6 +146,25 @@ export default function App() {
     window.history.replaceState({}, '', url.toString());
   }, [selectedEquipment]);
 
+  // Section items breakdown
+  const appliancesList = useMemo(() => {
+    return equipmentList.filter((eq) => {
+      const sec = eq.section || getEquipmentSection(eq.category);
+      return sec === 'appliances_electronics';
+    });
+  }, [equipmentList]);
+
+  const largeEquipmentList = useMemo(() => {
+    return equipmentList.filter((eq) => {
+      const sec = eq.section || getEquipmentSection(eq.category);
+      return sec === 'large_equipment';
+    });
+  }, [equipmentList]);
+
+  const activeProjectsCount = useMemo(() => {
+    return projects.filter((p) => p.status !== 'completed').length;
+  }, [projects]);
+
   // Compute overdue count & expiring warranty count
   const overdueCount = useMemo(() => {
     let count = 0;
@@ -156,18 +186,25 @@ export default function App() {
     return count;
   }, [equipmentList]);
 
-  // Unique rooms list
+  // Current equipment dataset depending on active tab
+  const currentTabEquipment = useMemo(() => {
+    if (activeTab === 'appliances_electronics') return appliancesList;
+    if (activeTab === 'large_equipment') return largeEquipmentList;
+    return equipmentList;
+  }, [activeTab, appliancesList, largeEquipmentList, equipmentList]);
+
+  // Unique rooms list for the active tab's items
   const rooms = useMemo(() => {
     const set = new Set<string>();
-    equipmentList.forEach((eq) => {
+    currentTabEquipment.forEach((eq) => {
       if (eq.locationRoom?.trim()) set.add(eq.locationRoom.trim());
     });
     return Array.from(set).sort();
-  }, [equipmentList]);
+  }, [currentTabEquipment]);
 
-  // Filtered equipment list for equipment tab
+  // Filtered equipment list for active equipment section
   const filteredEquipment = useMemo(() => {
-    return equipmentList.filter((eq) => {
+    return currentTabEquipment.filter((eq) => {
       if (categoryFilter !== 'all' && eq.category !== categoryFilter) return false;
       if (roomFilter !== 'all' && eq.locationRoom !== roomFilter) return false;
 
@@ -184,7 +221,7 @@ export default function App() {
 
       return true;
     });
-  }, [equipmentList, categoryFilter, roomFilter, searchQuery]);
+  }, [currentTabEquipment, categoryFilter, roomFilter, searchQuery]);
 
   // Handle equipment CRUD
   const handleSaveEquipment = async (equipmentData: Partial<Equipment>) => {
@@ -277,6 +314,75 @@ export default function App() {
     }
   };
 
+  // Handle Home Project CRUD & Scheduling
+  const handleAddProject = async (projectData: Partial<HomeProject>) => {
+    try {
+      const res = await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(projectData),
+      });
+      if (!res.ok) throw new Error('Failed to create project');
+      const created = await res.json();
+      setProjects((prev) => [created, ...prev]);
+      addToast('success', 'Project Added', `"${created.title}" added to project planning.`);
+    } catch (err: any) {
+      addToast('error', 'Project Save Failed', err.message);
+    }
+  };
+
+  const handleUpdateProject = async (id: string, projectData: Partial<HomeProject>) => {
+    try {
+      const res = await fetch(`/api/projects/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(projectData),
+      });
+      if (!res.ok) throw new Error('Failed to update project');
+      const updated = await res.json();
+      setProjects((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+      addToast('success', 'Project Updated', `"${updated.title}" updated.`);
+    } catch (err: any) {
+      addToast('error', 'Project Update Failed', err.message);
+    }
+  };
+
+  const handleDeleteProject = async (id: string) => {
+    try {
+      const res = await fetch(`/api/projects/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete project');
+      setProjects((prev) => prev.filter((p) => p.id !== id));
+      addToast('info', 'Project Removed', 'Project removed from schedule.');
+    } catch (err: any) {
+      addToast('error', 'Delete Failed', err.message);
+    }
+  };
+
+  const handleCompleteProject = async (id: string, logServiceRecord: boolean, actualCost?: number) => {
+    try {
+      const res = await fetch(`/api/projects/${id}/complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cost: actualCost, logAsService: logServiceRecord }),
+      });
+      if (!res.ok) throw new Error('Failed to complete project');
+      const data = await res.json();
+      setProjects((prev) => prev.map((p) => (p.id === id ? data.project : p)));
+      if (data.serviceRecord) {
+        setServiceRecords((prev) => [data.serviceRecord, ...prev]);
+      }
+      addToast(
+        'success',
+        'Project Completed',
+        data.project.recurrence !== 'once'
+          ? `Completed! Next run scheduled for ${data.project.scheduledDate}.`
+          : 'Project marked as completed.'
+      );
+    } catch (err: any) {
+      addToast('error', 'Error Completing Project', err.message);
+    }
+  };
+
   // Pushover alert scan
   const handleTriggerPushoverScan = async () => {
     setIsScanningPushover(true);
@@ -359,9 +465,13 @@ export default function App() {
       {/* Top Header */}
       <Header
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={(tab) => {
+          setActiveTab(tab);
+          setCategoryFilter('all');
+        }}
         onAddEquipment={() => {
           setEditingEquipment(null);
+          setFormDefaultSection(activeTab === 'large_equipment' ? 'large_equipment' : 'appliances_electronics');
           setIsEquipmentFormOpen(true);
         }}
         onOpenSettings={() => setIsSettingsOpen(true)}
@@ -369,6 +479,9 @@ export default function App() {
         isScanningPushover={isScanningPushover}
         overdueCount={overdueCount}
         expiringWarrantyCount={expiringWarrantyCount}
+        appliancesCount={appliancesList.length}
+        largeEquipmentCount={largeEquipmentList.length}
+        projectsCount={activeProjectsCount}
         pushoverConfig={settings}
       />
 
@@ -381,10 +494,43 @@ export default function App() {
           </div>
         ) : (
           <>
-            {/* VIEW 1: EQUIPMENT & DOCUMENTATION GRID */}
-            {activeTab === 'equipment' && (
+            {/* SECTION 1: APPLIANCES & ELECTRONICS */}
+            {activeTab === 'appliances_electronics' && (
               <div className="space-y-6">
-                {/* Search, Filter & Quick Stats Bar */}
+                {/* Section Header Card */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 sm:p-5 bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-transparent border border-amber-500/20 rounded-2xl">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-11 h-11 rounded-xl bg-amber-500/20 text-amber-500 flex items-center justify-center font-bold shrink-0 shadow-xs">
+                      <Tv className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-base sm:text-lg font-bold text-zinc-900 dark:text-zinc-100">
+                          Section 1: Appliances & Electronics
+                        </h2>
+                        <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-500 border border-amber-500/30">
+                          {appliancesList.length} items
+                        </span>
+                      </div>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                        Kitchen appliances, laundry machines, refrigerators, dishwashers, and smart home electronics.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setEditingEquipment(null);
+                      setFormDefaultSection('appliances_electronics');
+                      setIsEquipmentFormOpen(true);
+                    }}
+                    className="px-3.5 py-2 text-xs font-semibold rounded-lg bg-orange-600 hover:bg-orange-500 text-white flex items-center gap-1.5 shadow-sm transition-colors shrink-0"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Add Appliance</span>
+                  </button>
+                </div>
+
+                {/* Search, Filter & Quick Bar */}
                 <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 p-3 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
                   {/* Search */}
                   <div className="relative flex-1">
@@ -405,12 +551,16 @@ export default function App() {
                       onChange={(e) => setCategoryFilter(e.target.value)}
                       className="px-2.5 py-1.5 text-xs rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 font-medium"
                     >
-                      <option value="all">All Categories</option>
-                      {Object.entries(CATEGORIES).map(([key, val]) => (
-                        <option key={key} value={key}>
-                          {val.label}
-                        </option>
-                      ))}
+                      <option value="all">All Appliance Categories</option>
+                      {Object.entries(CATEGORIES)
+                        .filter(([key]) =>
+                          EQUIPMENT_SECTIONS.appliances_electronics.defaultCategories.includes(key as any)
+                        )
+                        .map(([key, val]) => (
+                          <option key={key} value={key}>
+                            {val.label}
+                          </option>
+                        ))}
                     </select>
 
                     <select
@@ -432,21 +582,10 @@ export default function App() {
                         setIsQrModalOpen(true);
                       }}
                       className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 border border-zinc-300/80 dark:border-zinc-700 flex items-center gap-1.5 transition-colors shadow-xs shrink-0"
-                      title="Generate and print QR code labels for physical units"
+                      title="Generate and print QR code labels"
                     >
                       <QrCode className="w-3.5 h-3.5 text-orange-500" />
                       <span>QR Labels</span>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setEditingEquipment(null);
-                        setIsEquipmentFormOpen(true);
-                      }}
-                      className="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-orange-600 hover:bg-orange-500 text-white flex items-center gap-1 transition-colors shadow-sm shrink-0"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Add Equipment</span>
                     </button>
                   </div>
                 </div>
@@ -454,12 +593,12 @@ export default function App() {
                 {/* Equipment Cards Grid */}
                 {filteredEquipment.length === 0 ? (
                   <div className="text-center py-16 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl">
-                    <Wrench className="w-10 h-10 mx-auto text-zinc-400 mb-3" />
+                    <Tv className="w-10 h-10 mx-auto text-zinc-400 mb-3" />
                     <h3 className="font-bold text-base text-zinc-800 dark:text-zinc-200">
-                      No equipment matched your filters
+                      No appliances or electronics found
                     </h3>
                     <p className="text-xs text-zinc-500 mt-1 max-w-sm mx-auto">
-                      Try clearing your search keyword or add a new appliance to your home registry.
+                      Try clearing your search query or add a refrigerator, dishwasher, or washer to this section.
                     </p>
                     <button
                       onClick={() => {
@@ -490,6 +629,7 @@ export default function App() {
                         }}
                         onEdit={(item) => {
                           setEditingEquipment(item);
+                          setFormDefaultSection('appliances_electronics');
                           setIsEquipmentFormOpen(true);
                         }}
                       />
@@ -499,7 +639,163 @@ export default function App() {
               </div>
             )}
 
-            {/* VIEW 2: WARRANTY TRACKER */}
+            {/* SECTION 2: LARGE EQUIPMENT */}
+            {activeTab === 'large_equipment' && (
+              <div className="space-y-6">
+                {/* Section Header Card */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 sm:p-5 bg-gradient-to-r from-orange-500/10 via-amber-500/5 to-transparent border border-orange-500/20 rounded-2xl">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-11 h-11 rounded-xl bg-orange-500/20 text-orange-500 flex items-center justify-center font-bold shrink-0 shadow-xs">
+                      <Tractor className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-base sm:text-lg font-bold text-zinc-900 dark:text-zinc-100">
+                          Section 2: Large Equipment
+                        </h2>
+                        <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-orange-500/15 text-orange-500 border border-orange-500/30">
+                          {largeEquipmentList.length} units
+                        </span>
+                      </div>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                        HVAC heat pumps, water heaters, standby generators, lawnmowers, pressure washers & power machinery.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setEditingEquipment(null);
+                      setFormDefaultSection('large_equipment');
+                      setIsEquipmentFormOpen(true);
+                    }}
+                    className="px-3.5 py-2 text-xs font-semibold rounded-lg bg-orange-600 hover:bg-orange-500 text-white flex items-center gap-1.5 shadow-sm transition-colors shrink-0"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Add Large Equipment</span>
+                  </button>
+                </div>
+
+                {/* Search, Filter & Quick Bar */}
+                <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 p-3 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                  {/* Search */}
+                  <div className="relative flex-1">
+                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search HVAC, generator, lawnmower, brand, model #, room..."
+                      className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                    />
+                  </div>
+
+                  {/* Filter Selects */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <select
+                      value={categoryFilter}
+                      onChange={(e) => setCategoryFilter(e.target.value)}
+                      className="px-2.5 py-1.5 text-xs rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 font-medium"
+                    >
+                      <option value="all">All Large Equipment Categories</option>
+                      {Object.entries(CATEGORIES)
+                        .filter(([key]) =>
+                          EQUIPMENT_SECTIONS.large_equipment.defaultCategories.includes(key as any)
+                        )
+                        .map(([key, val]) => (
+                          <option key={key} value={key}>
+                            {val.label}
+                          </option>
+                        ))}
+                    </select>
+
+                    <select
+                      value={roomFilter}
+                      onChange={(e) => setRoomFilter(e.target.value)}
+                      className="px-2.5 py-1.5 text-xs rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 font-medium max-w-[180px]"
+                    >
+                      <option value="all">All Locations / Rooms</option>
+                      {rooms.map((r) => (
+                        <option key={r} value={r}>
+                          {r}
+                        </option>
+                      ))}
+                    </select>
+
+                    <button
+                      onClick={() => {
+                        setQrTargetEquipment(null);
+                        setIsQrModalOpen(true);
+                      }}
+                      className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 border border-zinc-300/80 dark:border-zinc-700 flex items-center gap-1.5 transition-colors shadow-xs shrink-0"
+                      title="Generate and print QR code labels"
+                    >
+                      <QrCode className="w-3.5 h-3.5 text-orange-500" />
+                      <span>QR Labels</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Large Equipment Cards Grid */}
+                {filteredEquipment.length === 0 ? (
+                  <div className="text-center py-16 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl">
+                    <Tractor className="w-10 h-10 mx-auto text-zinc-400 mb-3" />
+                    <h3 className="font-bold text-base text-zinc-800 dark:text-zinc-200">
+                      No large equipment found
+                    </h3>
+                    <p className="text-xs text-zinc-500 mt-1 max-w-sm mx-auto">
+                      Try clearing your search query or add a central heat pump, generator, or lawnmower.
+                    </p>
+                    <button
+                      onClick={() => {
+                        setSearchQuery('');
+                        setCategoryFilter('all');
+                        setRoomFilter('all');
+                      }}
+                      className="mt-4 px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300"
+                    >
+                      Reset Filters
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {filteredEquipment.map((eq) => (
+                      <EquipmentCard
+                        key={eq.id}
+                        equipment={eq}
+                        onSelect={(item) => setSelectedEquipment(item)}
+                        onOpenQRCode={(item) => {
+                          setQrTargetEquipment(item);
+                          setIsQrModalOpen(true);
+                        }}
+                        onLogService={(item) => {
+                          setServiceTargetEquipment(item);
+                          setServiceTargetTask(null);
+                          setIsServiceModalOpen(true);
+                        }}
+                        onEdit={(item) => {
+                          setEditingEquipment(item);
+                          setFormDefaultSection('large_equipment');
+                          setIsEquipmentFormOpen(true);
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* SECTION 3: PROJECT PLANNING & SCHEDULING */}
+            {activeTab === 'projects' && (
+              <ProjectPlanningView
+                projects={projects}
+                onAddProject={handleAddProject}
+                onUpdateProject={handleUpdateProject}
+                onDeleteProject={handleDeleteProject}
+                onCompleteProject={handleCompleteProject}
+              />
+            )}
+
+            {/* UTILITY VIEW: WARRANTY TRACKER */}
             {activeTab === 'warranties' && (
               <WarrantyTrackerView
                 equipmentList={equipmentList}
@@ -508,7 +804,7 @@ export default function App() {
               />
             )}
 
-            {/* VIEW 3: MAINTENANCE SCHEDULE */}
+            {/* UTILITY VIEW: MAINTENANCE SCHEDULE */}
             {activeTab === 'maintenance' && (
               <MaintenanceScheduleView
                 equipmentList={equipmentList}
@@ -522,7 +818,7 @@ export default function App() {
               />
             )}
 
-            {/* VIEW 4: SERVICE HISTORY LOGS */}
+            {/* UTILITY VIEW: SERVICE HISTORY LOGS */}
             {activeTab === 'service_logs' && (
               <ServiceLogsView
                 serviceRecords={serviceRecords}
@@ -601,6 +897,7 @@ export default function App() {
       <EquipmentFormModal
         isOpen={isEquipmentFormOpen}
         equipmentToEdit={editingEquipment}
+        defaultSection={formDefaultSection}
         onClose={() => {
           setIsEquipmentFormOpen(false);
           setEditingEquipment(null);

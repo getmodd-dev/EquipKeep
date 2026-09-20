@@ -11,7 +11,9 @@ import {
   ChevronRight,
   ShieldCheck,
   Tag,
-  QrCode
+  QrCode,
+  UserCheck,
+  Phone
 } from 'lucide-react';
 import { Equipment } from '../types';
 import { CATEGORIES } from '../utils/categories';
@@ -127,6 +129,29 @@ export function EquipmentCard({ equipment, onSelect, onLogService, onEdit, onOpe
               <span className="font-medium text-zinc-800 dark:text-zinc-200 text-right truncate max-w-[160px]" title={equipment.specifications.filterSize}>
                 {equipment.specifications.filterSize}
               </span>
+            </div>
+          )}
+
+          {(equipment.contractor?.name || equipment.contractorName || equipment.contractor?.phone || equipment.contractorPhone) && (
+            <div className="flex items-center justify-between border-t border-zinc-200/60 dark:border-zinc-800 pt-1.5 mt-1.5">
+              <span className="text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
+                <UserCheck className="w-3 h-3 text-orange-500" /> Tech:
+              </span>
+              <div className="flex items-center gap-1.5 text-right font-medium text-zinc-800 dark:text-zinc-200 truncate max-w-[170px]">
+                <span className="truncate">
+                  {equipment.contractor?.name || equipment.contractorName || equipment.contractor?.company}
+                </span>
+                {(equipment.contractor?.phone || equipment.contractorPhone) && (
+                  <a
+                    href={`tel:${equipment.contractor?.phone || equipment.contractorPhone}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-orange-600 dark:text-orange-400 hover:text-orange-500 inline-flex items-center shrink-0 p-0.5"
+                    title={`Call: ${equipment.contractor?.phone || equipment.contractorPhone}`}
+                  >
+                    <Phone className="w-2.5 h-2.5" />
+                  </a>
+                )}
+              </div>
             </div>
           )}
         </div>

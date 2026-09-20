@@ -9,7 +9,7 @@ import { GoogleGenAI } from '@google/genai';
 dotenv.config();
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -31,6 +31,7 @@ if (!fs.existsSync(DATA_DIR)) {
 interface DatabaseSchema {
   equipment: any[];
   serviceRecords: any[];
+  projects?: any[];
   settings: {
     pushoverUserKey: string;
     pushoverApiToken: string;
@@ -68,6 +69,14 @@ const DEFAULT_DATA: DatabaseSchema = {
       purchasePrice: 11800,
       vendorStore: 'All-Star HVAC Heating & Cooling',
       status: 'operational',
+      contractor: {
+        name: 'Dave Miller',
+        company: 'All-Star HVAC Heating & Cooling',
+        phone: '(555) 382-9910',
+        notes: 'Lead Carrier certified technician. Annual maintenance contract #HVAC-4401.',
+      },
+      contractorName: 'Dave Miller',
+      contractorPhone: '(555) 382-9910',
       warranty: {
         type: 'extended',
         expirationDate: '2033-05-15',
@@ -214,6 +223,14 @@ const DEFAULT_DATA: DatabaseSchema = {
       purchasePrice: 1750,
       vendorStore: 'Ferguson Supply',
       status: 'operational',
+      contractor: {
+        name: 'Marcus Vance',
+        company: 'Apex Plumbing & Water Solutions',
+        phone: '(555) 749-2201',
+        notes: 'Licensed hybrid heat pump water heater contractor. Fast emergency leak response.',
+      },
+      contractorName: 'Marcus Vance',
+      contractorPhone: '(555) 749-2201',
       warranty: {
         type: 'manufacturer',
         expirationDate: '2032-11-05',
@@ -411,6 +428,14 @@ const DEFAULT_DATA: DatabaseSchema = {
       purchasePrice: 749,
       vendorStore: 'Toro Dealer / Ace Hardware',
       status: 'operational',
+      contractor: {
+        name: 'Gary Henderson',
+        company: 'Tri-County Small Engine & Power Equipment',
+        phone: '(555) 912-4433',
+        notes: 'Authorized Toro master dealer. Seasonal blade sharpening and carb tune-up.',
+      },
+      contractorName: 'Gary Henderson',
+      contractorPhone: '(555) 912-4433',
       warranty: {
         type: 'manufacturer',
         expirationDate: '2029-04-18',
@@ -538,6 +563,105 @@ const DEFAULT_DATA: DatabaseSchema = {
       createdAt: '2026-04-15T15:45:00.000Z',
     },
   ],
+  projects: [
+    {
+      id: 'proj-1',
+      title: 'Clean Gutters & Flush Downspouts',
+      category: 'gutters_roof',
+      description: 'Clear leaves, pine needles, and roofing granules from all gutters and flush downspouts to prevent foundation overflow.',
+      targetDate: '2026-10-25',
+      season: 'fall',
+      status: 'scheduled',
+      priority: 'high',
+      recurrence: 'seasonal_fall',
+      estimatedCost: 0,
+      actualCost: 0,
+      assignedType: 'diy',
+      checklist: [
+        { id: 'c-1', text: 'Set up ladder standoff stabilizer safely on roof edge', completed: false },
+        { id: 'c-2', text: 'Scoop leaf debris into bucket and bag for yard compost', completed: false },
+        { id: 'c-3', text: 'Run garden hose through downspouts to verify clean drainage', completed: false },
+        { id: 'c-4', text: 'Inspect gutter slope and re-secure loose fascia brackets', completed: false },
+      ],
+      materialsNeeded: 'Gloves, gutter scoop, bucket, garden hose, ladder standoff',
+      notes: 'Clean both front porch and two-story rear roofline. Re-check before first heavy freeze.',
+      lastCompletedDate: '2026-04-12',
+      createdAt: '2026-04-12T10:00:00.000Z',
+      updatedAt: '2026-04-12T10:00:00.000Z',
+    },
+    {
+      id: 'proj-2',
+      title: 'Exterior Trim, Fascia & Front Door Painting',
+      category: 'painting_exterior',
+      description: 'Scrape, prime, and apply two coats of exterior satin acrylic paint to front door, garage door trim, and window sills.',
+      targetDate: '2026-11-10',
+      season: 'fall',
+      status: 'planned',
+      priority: 'normal',
+      recurrence: 'multi_year',
+      estimatedCost: 180,
+      actualCost: 0,
+      assignedType: 'diy',
+      checklist: [
+        { id: 'c-21', text: 'Pressure wash trim and allow 48 hours dry time', completed: true },
+        { id: 'c-22', text: 'Scrape peeling spots and spot prime with Zinsser 1-2-3', completed: false },
+        { id: 'c-23', text: 'Caulk gaps around window trim with exterior polyurethane', completed: false },
+        { id: 'c-24', text: 'Apply 2 coats Benjamin Moore Aura Exterior Satin (Iron Mountain)', completed: false },
+      ],
+      materialsNeeded: '2 gal BM Aura Exterior Satin (Color: Iron Mountain 2134-30), 2.5" angled sash brushes, drop cloths',
+      notes: 'Paint only on dry days above 50°F and below 85% humidity.',
+      createdAt: '2026-08-01T12:00:00.000Z',
+      updatedAt: '2026-08-01T12:00:00.000Z',
+    },
+    {
+      id: 'proj-3',
+      title: 'Spring Landscaping, Lawn Aeration & Fresh Mulch',
+      category: 'landscaping_grounds',
+      description: 'Core aerate lawn, apply pre-emergent fertilizer, spade edge all perennial beds, and spread 4 yards of dark brown mulch.',
+      targetDate: '2027-03-20',
+      season: 'spring',
+      status: 'planned',
+      priority: 'normal',
+      recurrence: 'seasonal_spring',
+      estimatedCost: 320,
+      actualCost: 0,
+      assignedType: 'diy',
+      checklist: [
+        { id: 'c-31', text: 'Rent core aerator from local equipment yard', completed: false },
+        { id: 'c-32', text: 'Aerate front, back, and side lawns', completed: false },
+        { id: 'c-33', text: 'Trench crisp 3" edge along all perennial beds and tree rings', completed: false },
+        { id: 'c-34', text: 'Order & spread 4 yards dark brown double-shredded mulch', completed: false },
+        { id: 'c-35', text: 'Broadcast crabgrass pre-emergent lawn fertilizer', completed: false },
+      ],
+      materialsNeeded: '4 cu yd dark brown mulch, Scotts Halts pre-emergent, spade shovel, wheelbarrow',
+      notes: 'Call 811 utility line locator before aerating near buried internet cables.',
+      lastCompletedDate: '2026-03-28',
+      createdAt: '2026-03-28T14:00:00.000Z',
+      updatedAt: '2026-03-28T14:00:00.000Z',
+    },
+    {
+      id: 'proj-4',
+      title: 'Pressure Wash Driveway, Walkways & Patio',
+      category: 'pressure_washing',
+      description: 'Surface clean concrete driveway, sidewalk, and rear patio using 15" surface cleaner attachment.',
+      targetDate: '2027-05-15',
+      season: 'spring',
+      status: 'planned',
+      priority: 'normal',
+      recurrence: 'annual',
+      estimatedCost: 45,
+      actualCost: 0,
+      assignedType: 'diy',
+      checklist: [
+        { id: 'c-41', text: 'Pre-treat driveway oil stains with concrete degreaser', completed: false },
+        { id: 'c-42', text: 'Connect 15" rotating surface cleaner to pressure washer wand', completed: false },
+        { id: 'c-43', text: 'Rinse loose sediment toward street gutter with 40° fan tip', completed: false },
+      ],
+      materialsNeeded: '15" surface cleaner, degreaser, ear protection, goggles',
+      createdAt: '2026-05-10T10:00:00.000Z',
+      updatedAt: '2026-05-10T10:00:00.000Z',
+    },
+  ],
 };
 
 function readDatabase(): DatabaseSchema {
@@ -550,6 +674,7 @@ function readDatabase(): DatabaseSchema {
     const parsed = JSON.parse(content);
     if (!parsed.equipment) parsed.equipment = [];
     if (!parsed.serviceRecords) parsed.serviceRecords = [];
+    if (!parsed.projects) parsed.projects = DEFAULT_DATA.projects || [];
     if (!parsed.settings) parsed.settings = DEFAULT_DATA.settings;
     return parsed;
   } catch (err) {
@@ -896,6 +1021,137 @@ app.delete('/api/equipment/:id', (req: Request, res: Response) => {
   // Optionally remove associated service records or keep them
   writeDatabase(db);
   res.json({ success: true, deletedId: req.params.id });
+});
+
+// ==========================================
+// HOME PROJECTS & SCHEDULING ENDPOINTS
+// ==========================================
+
+app.get('/api/projects', (req: Request, res: Response) => {
+  const db = readDatabase();
+  res.json(db.projects || []);
+});
+
+app.post('/api/projects', (req: Request, res: Response) => {
+  const db = readDatabase();
+  if (!db.projects) db.projects = [];
+
+  const newProject = {
+    ...req.body,
+    id: req.body.id || `proj-${Date.now()}`,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    checklist: req.body.checklist || [],
+    status: req.body.status || 'planned',
+  };
+
+  db.projects.unshift(newProject);
+  writeDatabase(db);
+  res.status(201).json(newProject);
+});
+
+app.put('/api/projects/:id', (req: Request, res: Response) => {
+  const db = readDatabase();
+  if (!db.projects) db.projects = [];
+
+  const index = db.projects.findIndex((p) => p.id === req.params.id);
+  if (index === -1) {
+    res.status(404).json({ error: 'Project not found' });
+    return;
+  }
+
+  const updated = {
+    ...db.projects[index],
+    ...req.body,
+    id: req.params.id,
+    updatedAt: new Date().toISOString(),
+  };
+
+  db.projects[index] = updated;
+  writeDatabase(db);
+  res.json(updated);
+});
+
+app.delete('/api/projects/:id', (req: Request, res: Response) => {
+  const db = readDatabase();
+  if (!db.projects) db.projects = [];
+
+  const initialCount = db.projects.length;
+  db.projects = db.projects.filter((p) => p.id !== req.params.id);
+
+  if (db.projects.length === initialCount) {
+    res.status(404).json({ error: 'Project not found' });
+    return;
+  }
+
+  writeDatabase(db);
+  res.json({ success: true, deletedId: req.params.id });
+});
+
+// Mark project completed and advance recurrence if applicable
+app.post('/api/projects/:id/complete', (req: Request, res: Response) => {
+  const db = readDatabase();
+  if (!db.projects) db.projects = [];
+
+  const project = db.projects.find((p) => p.id === req.params.id);
+  if (!project) {
+    res.status(404).json({ error: 'Project not found' });
+    return;
+  }
+
+  const completedDate = req.body.completedDate || new Date().toISOString().split('T')[0];
+  project.lastCompletedDate = completedDate;
+  project.updatedAt = new Date().toISOString();
+
+  // Reset checklist completion if user desires, or mark complete
+  if (Array.isArray(project.checklist)) {
+    project.checklist.forEach((item: any) => {
+      item.completed = true;
+    });
+  }
+
+  // Calculate next recurrence date if recurring
+  if (project.recurrence && project.recurrence !== 'one_time') {
+    const baseDate = new Date(completedDate);
+    if (project.recurrence === 'seasonal_spring') {
+      baseDate.setFullYear(baseDate.getFullYear() + 1);
+      baseDate.setMonth(2); // March
+      baseDate.setDate(20);
+    } else if (project.recurrence === 'seasonal_fall') {
+      baseDate.setFullYear(baseDate.getFullYear() + 1);
+      baseDate.setMonth(9); // October
+      baseDate.setDate(20);
+    } else if (project.recurrence === 'biannual') {
+      baseDate.setMonth(baseDate.getMonth() + 6);
+    } else if (project.recurrence === 'annual') {
+      baseDate.setFullYear(baseDate.getFullYear() + 1);
+    } else if (project.recurrence === 'multi_year') {
+      baseDate.setFullYear(baseDate.getFullYear() + 3);
+    }
+    project.targetDate = baseDate.toISOString().split('T')[0];
+    project.status = 'scheduled';
+  } else {
+    project.status = 'completed';
+  }
+
+  // Optionally log into service records
+  if (req.body.logServiceRecord) {
+    const srvRecord = {
+      id: `srv-${Date.now()}`,
+      equipmentId: 'general-property',
+      equipmentName: `Property: ${project.title}`,
+      date: completedDate,
+      type: project.assignedType === 'contractor' ? 'repair' : 'routine',
+      technicianOrCompany: project.contractorName || 'Self (DIY)',
+      cost: Number(req.body.actualCost || project.actualCost || project.estimatedCost || 0),
+      description: `Completed project: ${project.title}. ${project.description || ''}`,
+      createdAt: new Date().toISOString(),
+    };
+    db.serviceRecords.unshift(srvRecord);
+  }
+
+  writeDatabase(db);
+  res.json({ success: true, project });
 });
 
 // ==========================================

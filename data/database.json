@@ -1,0 +1,696 @@
+{
+  "settings": {
+    "pushoverUserKey": "",
+    "pushoverApiToken": "",
+    "defaultDevice": "",
+    "defaultPriority": 0,
+    "defaultSound": "pushover",
+    "notifyOnWarrantyDays": 30,
+    "notifyOnMaintenanceDue": true,
+    "storageLocation": "/app/applet/data/documents"
+  },
+  "equipment": [
+    {
+      "id": "eq-1",
+      "name": "Central Heat Pump & Air Handler",
+      "brand": "Carrier",
+      "modelNumber": "25VNA436A003",
+      "serialNumber": "2421E88392",
+      "category": "hvac",
+      "locationRoom": "Attic & East Side Yard",
+      "purchaseDate": "2023-05-15",
+      "purchasePrice": 11800,
+      "vendorStore": "All-Star HVAC Heating & Cooling",
+      "status": "operational",
+      "contractor": {
+        "name": "Dave Miller",
+        "company": "All-Star HVAC Heating & Cooling",
+        "phone": "(555) 382-9910",
+        "notes": "Lead Carrier certified technician. Annual maintenance contract #HVAC-4401."
+      },
+      "contractorName": "Dave Miller",
+      "contractorPhone": "(555) 382-9910",
+      "warranty": {
+        "type": "extended",
+        "expirationDate": "2033-05-15",
+        "provider": "Carrier 10-Year Limited Warranty",
+        "policyNumber": "CAR-994208-TX",
+        "contactPhoneOrUrl": "1-800-227-7437",
+        "notes": "10-year parts and compressor warranty. Requires annual professional maintenance to maintain warranty status.",
+        "hasLifetimeWarranty": false
+      },
+      "specifications": {
+        "filterSize": "20x25x4 MERV 11 High Efficiency",
+        "powerRequirements": "208/230V 1-Phase 30A Breaker",
+        "fuelOrRefrigerant": "Puron (R-410A) 10.4 lbs charge",
+        "customSpecs": {
+          "SEER2 Rating": "19.5 SEER2",
+          "Capacity": "3.0 Ton Variable Speed",
+          "Filter Model": "Honeywell FC100A1037"
+        }
+      },
+      "maintenanceTasks": [
+        {
+          "id": "task-101",
+          "title": "Replace Media Air Filter (20x25x4)",
+          "intervalDays": 90,
+          "lastCompletedDate": "2026-06-25",
+          "nextDueDate": "2026-09-23",
+          "instructions": "Slide out Honeywell filter box in attic return plenum. Arrow points toward air handler blower.",
+          "priority": "high",
+          "filterOrPartSpecs": "Honeywell FC100A1037 20x25x4 MERV 11"
+        },
+        {
+          "id": "task-102",
+          "title": "Condensate Drain Line Vinegar Flush",
+          "intervalDays": 60,
+          "lastCompletedDate": "2026-08-01",
+          "nextDueDate": "2026-10-01",
+          "instructions": "Pour 1 cup distilled white vinegar into PVC T-cleanout pipe next to evaporator coil to prevent algae backup.",
+          "priority": "normal"
+        },
+        {
+          "id": "task-103",
+          "title": "Annual Professional Tune-up & Coil Clean",
+          "intervalDays": 365,
+          "lastCompletedDate": "2026-04-10",
+          "nextDueDate": "2027-04-10",
+          "instructions": "Call Carrier certified tech to measure static pressures, clean outdoor condenser coils, check subcooling.",
+          "priority": "high"
+        }
+      ],
+      "documents": [
+        {
+          "id": "doc-1",
+          "title": "Owner Operating Manual (PDF)",
+          "url": "https://www.carrier.com/residential/en/us/products/heat-pumps/25vna4/",
+          "fileType": "PDF Manual",
+          "notes": "Infinity 24/20 series with Greenspeed intelligence.",
+          "dateAdded": "2023-05-15"
+        },
+        {
+          "id": "doc-2",
+          "title": "Installation Invoice & Commissioning Sheet",
+          "notes": "Static pressure recorded at 0.42 in. w.g. Subcool 10.2F.",
+          "dateAdded": "2023-05-15"
+        }
+      ],
+      "notes": "Cleaned outdoor unit debris in spring. Thermostat is Carrier Infinity Touch SYSTXCCITC01-C.",
+      "createdAt": "2023-05-15T12:00:00.000Z",
+      "updatedAt": "2026-08-01T15:30:00.000Z",
+      "folderName": "Carrier_Central_Heat_Pump_Air_Handler_eq-1"
+    },
+    {
+      "id": "eq-2",
+      "name": "French Door Smart Refrigerator",
+      "brand": "GE Profile",
+      "modelNumber": "PVD28BYNFS",
+      "serialNumber": "MD849201A",
+      "category": "kitchen",
+      "locationRoom": "Kitchen Main",
+      "purchaseDate": "2024-03-20",
+      "purchasePrice": 2899,
+      "vendorStore": "Home Depot",
+      "status": "operational",
+      "warranty": {
+        "type": "manufacturer",
+        "expirationDate": "2026-10-15",
+        "provider": "GE Appliances 2-Year Extended Plan",
+        "policyNumber": "HD-GE-552109",
+        "contactPhoneOrUrl": "1-800-432-2737",
+        "notes": "Extended warranty expires in October 2026. Sealed refrigeration system covered for 5 years.",
+        "hasLifetimeWarranty": false
+      },
+      "specifications": {
+        "filterSize": "GE RPWFE Water Filter & GBE24B01 Air Filter",
+        "powerRequirements": "115V 60Hz 15A Dedicated",
+        "customSpecs": {
+          "Capacity": "27.9 cu. ft.",
+          "Finish": "Fingerprint Resistant Stainless Steel",
+          "Ice Maker": "Dual Icemaker with Autofill Pitcher"
+        }
+      },
+      "maintenanceTasks": [
+        {
+          "id": "task-201",
+          "title": "Replace Internal Water Filter (RPWFE)",
+          "intervalDays": 180,
+          "lastCompletedDate": "2026-03-15",
+          "nextDueDate": "2026-09-11",
+          "instructions": "Open left door, press release tab on top filter compartment, rotate cartridge down to unlock.",
+          "priority": "high",
+          "filterOrPartSpecs": "GE Genuine RPWFE with RFID chip"
+        },
+        {
+          "id": "task-202",
+          "title": "Vacuum Rear Condenser Coils",
+          "intervalDays": 180,
+          "lastCompletedDate": "2026-05-20",
+          "nextDueDate": "2026-11-20",
+          "instructions": "Pull unit out carefully, remove bottom rear access panel, brush and vacuum lint off coil.",
+          "priority": "normal"
+        }
+      ],
+      "documents": [
+        {
+          "id": "doc-21",
+          "title": "User Manual & Water Filter Quick Guide",
+          "url": "https://www.geappliances.com/appliance/GE-Profile-Series-ENERGY-STAR-27-9-Cu-Ft-Smart-Fingerprint-Resistant-4-Door-French-Door-Refrigerator-PVD28BYNFS",
+          "fileType": "Web Link",
+          "notes": "Contains troubleshooting codes for door switches and autofill sensor.",
+          "dateAdded": "2024-03-20"
+        }
+      ],
+      "notes": "Replaced water valve fitting under warranty in Dec 2024. Running cold and quiet.",
+      "createdAt": "2024-03-20T10:00:00.000Z",
+      "updatedAt": "2026-05-20T08:00:00.000Z",
+      "folderName": "GE_Profile_French_Door_Smart_Refrigerator_eq-2"
+    },
+    {
+      "id": "eq-3",
+      "name": "Hybrid Heat Pump Water Heater 50-Gal",
+      "brand": "Rheem",
+      "modelNumber": "PROPH50 T2 RH375-30",
+      "serialNumber": "RH20220911804",
+      "category": "plumbing",
+      "locationRoom": "Basement Utility Room",
+      "purchaseDate": "2022-11-05",
+      "purchasePrice": 1750,
+      "vendorStore": "Ferguson Supply",
+      "status": "operational",
+      "contractor": {
+        "name": "Marcus Vance",
+        "company": "Apex Plumbing & Water Solutions",
+        "phone": "(555) 749-2201",
+        "notes": "Licensed hybrid heat pump water heater contractor. Fast emergency leak response."
+      },
+      "contractorName": "Marcus Vance",
+      "contractorPhone": "(555) 749-2201",
+      "warranty": {
+        "type": "manufacturer",
+        "expirationDate": "2032-11-05",
+        "provider": "Rheem Prestige 10-Year Limited Warranty",
+        "policyNumber": "RHM-22-0911-PRO",
+        "contactPhoneOrUrl": "1-866-279-4566",
+        "notes": "10-year tank and parts warranty. EcoNet WiFi connected.",
+        "hasLifetimeWarranty": false
+      },
+      "specifications": {
+        "filterSize": "Washable Upper Air Filter",
+        "powerRequirements": "240V 30A Dual Pole Breaker",
+        "customSpecs": {
+          "Capacity": "50 Gallons",
+          "Efficiency": "3.75 UEF Energy Star",
+          "Anode Rod Part": "SP11526C 0.900 Dia x 44\" Magnesium"
+        }
+      },
+      "maintenanceTasks": [
+        {
+          "id": "task-301",
+          "title": "Wash Top Heat Pump Air Filter",
+          "intervalDays": 90,
+          "lastCompletedDate": "2026-07-10",
+          "nextDueDate": "2026-10-10",
+          "instructions": "Slide filter off top cowl, rinse under sink with warm water, let dry before re-inserting.",
+          "priority": "normal"
+        },
+        {
+          "id": "task-302",
+          "title": "Tank Sediment Flush & T&P Valve Test",
+          "intervalDays": 365,
+          "lastCompletedDate": "2025-11-01",
+          "nextDueDate": "2026-11-01",
+          "instructions": "Hook garden hose to bottom brass drain valve, open full port valve for 5 minutes until water runs clear.",
+          "priority": "high"
+        },
+        {
+          "id": "task-303",
+          "title": "Inspect Magnesium Anode Rod",
+          "intervalDays": 730,
+          "lastCompletedDate": "2024-11-05",
+          "nextDueDate": "2026-11-05",
+          "instructions": "Turn off power, shut cold supply, relieve pressure. 1-1/16\" socket to inspect remaining core wire.",
+          "priority": "normal"
+        }
+      ],
+      "documents": [
+        {
+          "id": "doc-31",
+          "title": "Rheem EcoNet Installation & Service Guide",
+          "notes": "Includes dip-switch settings for compressor heating rate.",
+          "dateAdded": "2022-11-05"
+        }
+      ],
+      "notes": "Set to \"Energy Saver\" hybrid mode (125°F). EcoNet module integrated into Home Assistant.",
+      "createdAt": "2022-11-05T09:00:00.000Z",
+      "updatedAt": "2026-07-10T14:00:00.000Z",
+      "folderName": "Rheem_Hybrid_Heat_Pump_Water_Heater_50-Gal_eq-3"
+    },
+    {
+      "id": "eq-4",
+      "name": "800 Series Quiet Dishwasher",
+      "brand": "Bosch",
+      "modelNumber": "SHPM88Z75N",
+      "serialNumber": "FD010408194",
+      "category": "kitchen",
+      "locationRoom": "Kitchen Island",
+      "purchaseDate": "2021-08-14",
+      "purchasePrice": 1249,
+      "vendorStore": "Best Buy",
+      "status": "operational",
+      "warranty": {
+        "type": "lifetime",
+        "expirationDate": "",
+        "provider": "Bosch Lifetime Rust-Through Warranty",
+        "policyNumber": "BSH-880941",
+        "contactPhoneOrUrl": "1-800-944-2904",
+        "notes": "Original 1-year general warranty expired, but stainless steel tub has lifetime warranty against rust-through.",
+        "hasLifetimeWarranty": true
+      },
+      "specifications": {
+        "powerRequirements": "120V 15A Plug / Direct Box",
+        "customSpecs": {
+          "Sound Level": "40 dBA Ultra-Quiet",
+          "Drying System": "CrystalDry with Zeolite mineral",
+          "Mesh Filter Part": "Bosch 00645038 / 10002494"
+        }
+      },
+      "maintenanceTasks": [
+        {
+          "id": "task-401",
+          "title": "Clean Triple Filtration System",
+          "intervalDays": 30,
+          "lastCompletedDate": "2026-08-15",
+          "nextDueDate": "2026-09-15",
+          "instructions": "Rotate circular micro-filter counter-clockwise, remove cylindrical basket, rinse grease under hot water with dish soap.",
+          "priority": "high",
+          "filterOrPartSpecs": "Bosch 00645038 microfilter assembly"
+        },
+        {
+          "id": "task-402",
+          "title": "Run Dishwasher Descaler & Clean Cycle",
+          "intervalDays": 90,
+          "lastCompletedDate": "2026-06-15",
+          "nextDueDate": "2026-09-15",
+          "instructions": "Add 1 pouch Bosch descaling powder to bottom of empty tub, run \"Sanitize\" wash cycle at max temperature.",
+          "priority": "normal"
+        }
+      ],
+      "documents": [
+        {
+          "id": "doc-41",
+          "title": "Bosch CrystalDry Operating Instructions",
+          "url": "https://www.bosch-home.com",
+          "fileType": "PDF Manual",
+          "dateAdded": "2021-08-14"
+        }
+      ],
+      "notes": "Replaced drain pump impeller in 2024 after glass shard obstruction. Operates perfectly.",
+      "createdAt": "2021-08-14T09:00:00.000Z",
+      "updatedAt": "2026-08-15T18:00:00.000Z",
+      "folderName": "Bosch_800_Series_Quiet_Dishwasher_eq-4"
+    },
+    {
+      "id": "eq-5",
+      "name": "EU3000iS Portable Inverter Generator",
+      "brand": "Honda",
+      "modelNumber": "EU3000S1AG",
+      "serialNumber": "EZGF-1940291",
+      "category": "workshop",
+      "locationRoom": "Garage Storage Rack B",
+      "purchaseDate": "2022-09-10",
+      "purchasePrice": 2399,
+      "vendorStore": "Northern Tool & Equipment",
+      "status": "operational",
+      "contractor": {
+        "name": "Brad Stevens",
+        "company": "Metro Power & Standby Generators",
+        "phone": "(555) 628-3390",
+        "notes": "Factory trained inverter tech. In-shop and mobile repair services."
+      },
+      "contractorName": "Brad Stevens",
+      "contractorPhone": "(555) 628-3390",
+      "warranty": {
+        "type": "manufacturer",
+        "expirationDate": "2025-09-10",
+        "provider": "Honda 3-Year Residential Warranty",
+        "policyNumber": "HND-EU3-1940291",
+        "contactPhoneOrUrl": "1-770-497-6400",
+        "notes": "Original 3-year factory warranty expired in Sept 2025. Standard parts readily available.",
+        "hasLifetimeWarranty": false
+      },
+      "specifications": {
+        "filterSize": "Honda Foam Dual-Element Air Filter 17211-ZS9-A02",
+        "fuelOrRefrigerant": "Unleaded 87+ Ethanol-Free preferred (3.4 gal capacity)",
+        "customSpecs": {
+          "Oil Type": "SAE 10W-30 Full Synthetic (0.58 US qt)",
+          "Spark Plug": "NGK BPR6ES (Gap 0.028-0.031 in)",
+          "Rated Watts": "2800W continuous / 3000W surge"
+        }
+      },
+      "maintenanceTasks": [
+        {
+          "id": "task-501",
+          "title": "Engine Oil Change (10W-30 Synthetic)",
+          "intervalDays": 180,
+          "lastCompletedDate": "2026-04-15",
+          "nextDueDate": "2026-10-15",
+          "instructions": "Run engine 3 mins to warm oil. Remove maintenance side cover, drain into pan, fill 18.6 oz 10W-30 synthetic.",
+          "priority": "high",
+          "filterOrPartSpecs": "Mobil 1 10W-30 (0.58 qt)"
+        },
+        {
+          "id": "task-502",
+          "title": "Monthly 20-Minute Exercise Run with Load",
+          "intervalDays": 30,
+          "lastCompletedDate": "2026-08-20",
+          "nextDueDate": "2026-09-20",
+          "instructions": "Turn fuel valve on, electric start, plug in 1500W space heater to load generator for 20 mins to prevent carburetor varnish.",
+          "priority": "normal"
+        }
+      ],
+      "documents": [
+        {
+          "id": "doc-51",
+          "title": "Honda EU3000iS Shop & Maintenance Manual",
+          "notes": "Includes carburetor jet cleaning diagrams and electric starter wiring.",
+          "dateAdded": "2022-09-10"
+        }
+      ],
+      "notes": "Carburetor always drained with bowl drain screw if stored more than 30 days. Uses STA-BIL fuel stabilizer.",
+      "createdAt": "2022-09-10T11:00:00.000Z",
+      "updatedAt": "2026-08-20T16:00:00.000Z",
+      "folderName": "Honda_EU3000iS_Portable_Inverter_Generator_eq-5"
+    },
+    {
+      "id": "eq-6",
+      "name": "Super Recycler 21\" Personal Pace Lawnmower",
+      "brand": "Toro",
+      "modelNumber": "21386",
+      "serialNumber": "408920194",
+      "category": "lawn_garden",
+      "locationRoom": "Garden Shed",
+      "purchaseDate": "2024-04-18",
+      "purchasePrice": 749,
+      "vendorStore": "Toro Dealer / Ace Hardware",
+      "status": "operational",
+      "contractor": {
+        "name": "Gary Henderson",
+        "company": "Tri-County Small Engine & Power Equipment",
+        "phone": "(555) 912-4433",
+        "notes": "Authorized Toro master dealer. Seasonal blade sharpening and carb tune-up."
+      },
+      "contractorName": "Gary Henderson",
+      "contractorPhone": "(555) 912-4433",
+      "warranty": {
+        "type": "manufacturer",
+        "expirationDate": "2029-04-18",
+        "provider": "Toro 5-Year Full Coverage & Guaranteed-to-Start",
+        "policyNumber": "TR-21386-408",
+        "contactPhoneOrUrl": "1-888-384-9939",
+        "notes": "5-year full warranty coverage including Cast Aluminum Deck and 5-Year GTS guarantee.",
+        "hasLifetimeWarranty": false
+      },
+      "specifications": {
+        "filterSize": "Briggs & Stratton 593260 Air Filter",
+        "customSpecs": {
+          "Engine": "Briggs & Stratton 163cc EXi Series",
+          "Blade Part": "Toro 108-3762-03 Atomic Blade",
+          "Deck Material": "Cast Aluminum (Rust-Free)"
+        }
+      },
+      "maintenanceTasks": [
+        {
+          "id": "task-601",
+          "title": "Sharpen or Replace Cutting Blade",
+          "intervalDays": 120,
+          "lastCompletedDate": "2026-05-10",
+          "nextDueDate": "2026-09-10",
+          "instructions": "Disconnect spark plug wire! Tilt mower with air filter pointing UP. 5/8\" socket to remove blade bolt.",
+          "priority": "normal",
+          "filterOrPartSpecs": "Toro 108-3762-03 Atomic Blade"
+        }
+      ],
+      "documents": [
+        {
+          "id": "doc-61",
+          "title": "Toro 21386 Operator Manual & Parts List",
+          "dateAdded": "2024-04-18"
+        }
+      ],
+      "notes": "Cast aluminum deck never rusts. High-lift accelerator installed.",
+      "createdAt": "2024-04-18T14:00:00.000Z",
+      "updatedAt": "2026-05-10T11:00:00.000Z",
+      "folderName": "Toro_Super_Recycler_21_Personal_Pace_Lawnmower_eq-6"
+    }
+  ],
+  "serviceRecords": [
+    {
+      "id": "srv-1",
+      "equipmentId": "eq-1",
+      "equipmentName": "Central Heat Pump & Air Handler",
+      "date": "2026-06-25",
+      "type": "routine",
+      "technicianOrCompany": "Self (DIY Maintenance)",
+      "cost": 42.5,
+      "description": "Replaced Honeywell 20x25x4 MERV 11 filter in attic plenum. Vacuumed return grill.",
+      "partsReplaced": "Honeywell FC100A1037 Filter",
+      "nextServiceDueDate": "2026-09-23",
+      "invoiceOrReceiptNote": "Purchased 2-pack from SupplyHouse #88194",
+      "createdAt": "2026-06-25T14:30:00.000Z"
+    },
+    {
+      "id": "srv-2",
+      "equipmentId": "eq-1",
+      "equipmentName": "Central Heat Pump & Air Handler",
+      "date": "2026-04-10",
+      "type": "inspection",
+      "technicianOrCompany": "All-Star HVAC (Tech: Dave M.)",
+      "cost": 165,
+      "description": "Annual spring check. Chemically washed outdoor condenser coil, checked amp draw on compressor and fan motor, verified R-410A charge and subcooling at 10.5F. Condensate safety float switch tested.",
+      "partsReplaced": "None (System in peak condition)",
+      "nextServiceDueDate": "2027-04-10",
+      "invoiceOrReceiptNote": "Invoice #HVAC-2026-4401 paid via check",
+      "createdAt": "2026-04-10T10:15:00.000Z"
+    },
+    {
+      "id": "srv-3",
+      "equipmentId": "eq-2",
+      "equipmentName": "French Door Smart Refrigerator",
+      "date": "2024-12-18",
+      "type": "warranty_claim",
+      "technicianOrCompany": "GE Factory Certified Service",
+      "cost": 0,
+      "description": "Slow drip observed behind lower ice maker valve. Tech replaced dual water inlet solenoid valve under warranty. Zero out-of-pocket cost.",
+      "partsReplaced": "Dual Water Inlet Solenoid WR57X33326",
+      "nextServiceDueDate": "2025-06-18",
+      "invoiceOrReceiptNote": "Warranty Claim #GE-99410 - covered in full",
+      "createdAt": "2024-12-18T16:00:00.000Z"
+    },
+    {
+      "id": "srv-4",
+      "equipmentId": "eq-2",
+      "equipmentName": "French Door Smart Refrigerator",
+      "date": "2026-03-15",
+      "type": "routine",
+      "technicianOrCompany": "Self (DIY Maintenance)",
+      "cost": 54,
+      "description": "Replaced genuine GE RPWFE filter and reset water filter button on control panel. Flushed 2 gallons of water through dispenser.",
+      "partsReplaced": "GE RPWFE Water Filter Cartridge",
+      "nextServiceDueDate": "2026-09-11",
+      "invoiceOrReceiptNote": "Amazon Order #114-9920194",
+      "createdAt": "2026-03-15T11:20:00.000Z"
+    },
+    {
+      "id": "srv-5",
+      "equipmentId": "eq-4",
+      "equipmentName": "800 Series Quiet Dishwasher",
+      "date": "2024-09-04",
+      "type": "repair",
+      "technicianOrCompany": "Self (DIY Repair)",
+      "cost": 38,
+      "description": "Error code E24 triggered (drain pump blocked). Discovered tiny piece of broken wine glass wedged in drain impeller under white plastic cover. Cleared debris and replaced pump cover gasket.",
+      "partsReplaced": "Pump cover gasket 00611322",
+      "nextServiceDueDate": "2024-10-04",
+      "invoiceOrReceiptNote": "AppliancePartsPros gasket order",
+      "createdAt": "2024-09-04T19:00:00.000Z"
+    },
+    {
+      "id": "srv-6",
+      "equipmentId": "eq-5",
+      "equipmentName": "EU3000iS Portable Inverter Generator",
+      "date": "2026-04-15",
+      "type": "routine",
+      "technicianOrCompany": "Self (DIY Maintenance)",
+      "cost": 22,
+      "description": "Spring service. Drained old oil, added 18.5 oz Mobil 1 10W-30 Full Synthetic. Cleaned foam pre-filter in warm soapy water and re-oiled. Checked NGK spark plug gap at 0.029\". Ran with space heater load test for 20 mins.",
+      "partsReplaced": "Mobil 1 10W-30 Synthetic Oil",
+      "nextServiceDueDate": "2026-10-15",
+      "invoiceOrReceiptNote": "AutoZone oil purchase",
+      "createdAt": "2026-04-15T15:45:00.000Z"
+    }
+  ],
+  "projects": [
+    {
+      "id": "proj-1",
+      "title": "Clean Gutters & Flush Downspouts",
+      "category": "gutters_roof",
+      "description": "Clear leaves, pine needles, and roofing granules from all gutters and flush downspouts to prevent foundation overflow.",
+      "targetDate": "2026-10-25",
+      "season": "fall",
+      "status": "scheduled",
+      "priority": "high",
+      "recurrence": "seasonal_fall",
+      "estimatedCost": 0,
+      "actualCost": 0,
+      "assignedType": "diy",
+      "checklist": [
+        {
+          "id": "c-1",
+          "text": "Set up ladder standoff stabilizer safely on roof edge",
+          "completed": false
+        },
+        {
+          "id": "c-2",
+          "text": "Scoop leaf debris into bucket and bag for yard compost",
+          "completed": false
+        },
+        {
+          "id": "c-3",
+          "text": "Run garden hose through downspouts to verify clean drainage",
+          "completed": false
+        },
+        {
+          "id": "c-4",
+          "text": "Inspect gutter slope and re-secure loose fascia brackets",
+          "completed": false
+        }
+      ],
+      "materialsNeeded": "Gloves, gutter scoop, bucket, garden hose, ladder standoff",
+      "notes": "Clean both front porch and two-story rear roofline. Re-check before first heavy freeze.",
+      "lastCompletedDate": "2026-04-12",
+      "createdAt": "2026-04-12T10:00:00.000Z",
+      "updatedAt": "2026-04-12T10:00:00.000Z"
+    },
+    {
+      "id": "proj-2",
+      "title": "Exterior Trim, Fascia & Front Door Painting",
+      "category": "painting_exterior",
+      "description": "Scrape, prime, and apply two coats of exterior satin acrylic paint to front door, garage door trim, and window sills.",
+      "targetDate": "2026-11-10",
+      "season": "fall",
+      "status": "planned",
+      "priority": "normal",
+      "recurrence": "multi_year",
+      "estimatedCost": 180,
+      "actualCost": 0,
+      "assignedType": "diy",
+      "checklist": [
+        {
+          "id": "c-21",
+          "text": "Pressure wash trim and allow 48 hours dry time",
+          "completed": true
+        },
+        {
+          "id": "c-22",
+          "text": "Scrape peeling spots and spot prime with Zinsser 1-2-3",
+          "completed": false
+        },
+        {
+          "id": "c-23",
+          "text": "Caulk gaps around window trim with exterior polyurethane",
+          "completed": false
+        },
+        {
+          "id": "c-24",
+          "text": "Apply 2 coats Benjamin Moore Aura Exterior Satin (Iron Mountain)",
+          "completed": false
+        }
+      ],
+      "materialsNeeded": "2 gal BM Aura Exterior Satin (Color: Iron Mountain 2134-30), 2.5\" angled sash brushes, drop cloths",
+      "notes": "Paint only on dry days above 50°F and below 85% humidity.",
+      "createdAt": "2026-08-01T12:00:00.000Z",
+      "updatedAt": "2026-08-01T12:00:00.000Z"
+    },
+    {
+      "id": "proj-3",
+      "title": "Spring Landscaping, Lawn Aeration & Fresh Mulch",
+      "category": "landscaping_grounds",
+      "description": "Core aerate lawn, apply pre-emergent fertilizer, spade edge all perennial beds, and spread 4 yards of dark brown mulch.",
+      "targetDate": "2027-03-20",
+      "season": "spring",
+      "status": "planned",
+      "priority": "normal",
+      "recurrence": "seasonal_spring",
+      "estimatedCost": 320,
+      "actualCost": 0,
+      "assignedType": "diy",
+      "checklist": [
+        {
+          "id": "c-31",
+          "text": "Rent core aerator from local equipment yard",
+          "completed": false
+        },
+        {
+          "id": "c-32",
+          "text": "Aerate front, back, and side lawns",
+          "completed": false
+        },
+        {
+          "id": "c-33",
+          "text": "Trench crisp 3\" edge along all perennial beds and tree rings",
+          "completed": false
+        },
+        {
+          "id": "c-34",
+          "text": "Order & spread 4 yards dark brown double-shredded mulch",
+          "completed": false
+        },
+        {
+          "id": "c-35",
+          "text": "Broadcast crabgrass pre-emergent lawn fertilizer",
+          "completed": false
+        }
+      ],
+      "materialsNeeded": "4 cu yd dark brown mulch, Scotts Halts pre-emergent, spade shovel, wheelbarrow",
+      "notes": "Call 811 utility line locator before aerating near buried internet cables.",
+      "lastCompletedDate": "2026-03-28",
+      "createdAt": "2026-03-28T14:00:00.000Z",
+      "updatedAt": "2026-03-28T14:00:00.000Z"
+    },
+    {
+      "id": "proj-4",
+      "title": "Pressure Wash Driveway, Walkways & Patio",
+      "category": "pressure_washing",
+      "description": "Surface clean concrete driveway, sidewalk, and rear patio using 15\" surface cleaner attachment.",
+      "targetDate": "2027-05-15",
+      "season": "spring",
+      "status": "planned",
+      "priority": "normal",
+      "recurrence": "annual",
+      "estimatedCost": 45,
+      "actualCost": 0,
+      "assignedType": "diy",
+      "checklist": [
+        {
+          "id": "c-41",
+          "text": "Pre-treat driveway oil stains with concrete degreaser",
+          "completed": false
+        },
+        {
+          "id": "c-42",
+          "text": "Connect 15\" rotating surface cleaner to pressure washer wand",
+          "completed": false
+        },
+        {
+          "id": "c-43",
+          "text": "Rinse loose sediment toward street gutter with 40° fan tip",
+          "completed": false
+        }
+      ],
+      "materialsNeeded": "15\" surface cleaner, degreaser, ear protection, goggles",
+      "createdAt": "2026-05-10T10:00:00.000Z",
+      "updatedAt": "2026-05-10T10:00:00.000Z"
+    }
+  ]
+}
