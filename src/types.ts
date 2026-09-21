@@ -230,3 +230,34 @@ export interface HomeProject {
   updatedAt: string;
 }
 
+export type HomeDocumentCategory =
+  | 'receipt'
+  | 'manual'
+  | 'warranty_insurance'
+  | 'permit_blueprint'
+  | 'contractor_work'
+  | 'utility_infrastructure'
+  | 'paint_materials'
+  | 'tax_closing'
+  | 'other';
+
+export interface HomeDocument {
+  id: string;
+  title: string;
+  category: HomeDocumentCategory;
+  fileName?: string;
+  filePath?: string;
+  fileSize?: number;
+  mimeType?: string;
+  fileType?: string;
+  url?: string;
+  notes?: string;
+  dateAdded: string;
+  documentDate?: string;
+  amount?: number;
+  vendorOrIssuer?: string;
+  roomOrArea?: string;
+  tags?: string[];
+  isLocal?: boolean;
+}
+

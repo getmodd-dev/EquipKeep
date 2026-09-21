@@ -28,8 +28,9 @@ import { ServiceLogsView } from './components/ServiceLogsView';
 import { PushoverSettingsModal } from './components/PushoverSettingsModal';
 import { QRCodeModal } from './components/QRCodeModal';
 import { ProjectPlanningView } from './components/ProjectPlanningView';
+import { HomeDocumentsView } from './components/HomeDocumentsView';
 import { ToastContainer, ToastMessage } from './components/Toast';
-import { Equipment, ServiceRecord, PushoverConfig, MaintenanceTask, HomeProject, EquipmentSection } from './types';
+import { Equipment, ServiceRecord, PushoverConfig, MaintenanceTask, HomeProject, EquipmentSection, HomeDocument } from './types';
 import { CATEGORIES, getEquipmentSection, EQUIPMENT_SECTIONS } from './utils/categories';
 import { getWarrantyStatus, getDaysDifference, getTodayDateString } from './utils/date';
 
@@ -37,6 +38,7 @@ export default function App() {
   const [equipmentList, setEquipmentList] = useState<Equipment[]>([]);
   const [serviceRecords, setServiceRecords] = useState<ServiceRecord[]>([]);
   const [projects, setProjects] = useState<HomeProject[]>([]);
+  const [homeDocuments, setHomeDocuments] = useState<HomeDocument[]>([]);
   const [settings, setSettings] = useState<PushoverConfig>({
     userKey: '',
     apiToken: '',
@@ -85,11 +87,12 @@ export default function App() {
   // Fetch initial data
   const fetchData = async () => {
     try {
-      const [eqRes, srvRes, setRes, projRes] = await Promise.all([
+      const [eqRes, srvRes, setRes, projRes, homeDocsRes] = await Promise.all([
         fetch('/api/equipment'),
         fetch('/api/service-records'),
         fetch('/api/settings'),
         fetch('/api/projects'),
+        fetch('/api/home-documents'),
       ]);
 
       if (eqRes.ok) {
@@ -107,6 +110,10 @@ export default function App() {
       if (projRes.ok) {
         const projData = await projRes.json();
         setProjects(projData);
+      }
+      if (homeDocsRes.ok) {
+        const homeDocsData = await homeDocsRes.json();
+        setHomeDocuments(homeDocsData);
       }
     } catch (err) {
       console.error('Error fetching data:', err);
@@ -383,6 +390,74 @@ export default function App() {
     }
   };
 
+  // Home Documents handlers
+  const handleUploadHomeDocument = async (formData: FormData): Promise<boolean> => {
+    try {
+      const res = await fetch('/api/home-documents/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to upload document');
+      setHomeDocuments((prev) => [data.document, ...prev]);
+      addToast('success', 'Document Saved', `"${data.document.title}" saved to Unraid storage.`);
+      return true;
+    } catch (err: any) {
+      addToast('error', 'Upload Failed', err.message);
+      return false;
+    }
+  };
+
+  const handleAddHomeDocumentLink = async (docData: Partial<HomeDocument>): Promise<boolean> => {
+    try {
+      const res = await fetch('/api/home-documents/link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(docData),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to save document link');
+      setHomeDocuments((prev) => [data.document, ...prev]);
+      addToast('success', 'Link Saved', `"${data.document.title}" added to home documents.`);
+      return true;
+    } catch (err: any) {
+      addToast('error', 'Error Saving Link', err.message);
+      return false;
+    }
+  };
+
+  const handleUpdateHomeDocument = async (id: string, docData: Partial<HomeDocument>): Promise<boolean> => {
+    try {
+      const res = await fetch(`/api/home-documents/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(docData),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update document');
+      setHomeDocuments((prev) => prev.map((d) => (d.id === id ? data.document : d)));
+      addToast('success', 'Document Updated', `"${data.document.title}" updated.`);
+      return true;
+    } catch (err: any) {
+      addToast('error', 'Update Failed', err.message);
+      return false;
+    }
+  };
+
+  const handleDeleteHomeDocument = async (id: string): Promise<boolean> => {
+    try {
+      const res = await fetch(`/api/home-documents/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to delete document');
+      setHomeDocuments((prev) => prev.filter((d) => d.id !== id));
+      addToast('info', 'Document Removed', 'Document deleted from records and storage.');
+      return true;
+    } catch (err: any) {
+      addToast('error', 'Delete Failed', err.message);
+      return false;
+    }
+  };
+
   // Pushover alert scan
   const handleTriggerPushoverScan = async () => {
     setIsScanningPushover(true);
@@ -482,6 +557,7 @@ export default function App() {
         appliancesCount={appliancesList.length}
         largeEquipmentCount={largeEquipmentList.length}
         projectsCount={activeProjectsCount}
+        homeDocumentsCount={homeDocuments.length}
         pushoverConfig={settings}
       />
 
@@ -792,6 +868,17 @@ export default function App() {
                 onUpdateProject={handleUpdateProject}
                 onDeleteProject={handleDeleteProject}
                 onCompleteProject={handleCompleteProject}
+              />
+            )}
+
+            {/* SECTION 4: GENERAL HOME DOCUMENTS & RECEIPTS */}
+            {activeTab === 'home_documents' && (
+              <HomeDocumentsView
+                documents={homeDocuments}
+                onUploadDocument={handleUploadHomeDocument}
+                onAddDocumentLink={handleAddHomeDocumentLink}
+                onUpdateDocument={handleUpdateHomeDocument}
+                onDeleteDocument={handleDeleteHomeDocument}
               />
             )}
 

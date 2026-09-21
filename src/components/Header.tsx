@@ -11,6 +11,7 @@ import {
   Tv,
   Tractor,
   ClipboardList,
+  FolderArchive,
 } from 'lucide-react';
 import { PushoverConfig } from '../types';
 
@@ -18,6 +19,7 @@ export type AppTab =
   | 'appliances_electronics'
   | 'large_equipment'
   | 'projects'
+  | 'home_documents'
   | 'maintenance'
   | 'warranties'
   | 'service_logs';
@@ -34,6 +36,7 @@ interface HeaderProps {
   appliancesCount: number;
   largeEquipmentCount: number;
   projectsCount: number;
+  homeDocumentsCount?: number;
   pushoverConfig?: PushoverConfig;
 }
 
@@ -49,6 +52,7 @@ export function Header({
   appliancesCount,
   largeEquipmentCount,
   projectsCount,
+  homeDocumentsCount,
   pushoverConfig,
 }: HeaderProps) {
   const isPushoverConfigured = Boolean(pushoverConfig?.userKey && pushoverConfig?.apiToken);
@@ -193,6 +197,24 @@ export function Header({
           <span className="px-1.5 py-0.2 rounded-full text-[10px] font-semibold bg-emerald-950/60 text-emerald-400 border border-emerald-800/50">
             {projectsCount}
           </span>
+        </button>
+
+        {/* Section 4: Home Documents & Receipts */}
+        <button
+          onClick={() => onTabChange('home_documents')}
+          className={`px-3 py-2 text-xs font-medium rounded-lg whitespace-nowrap transition-all flex items-center gap-2 ${
+            activeTab === 'home_documents'
+              ? 'bg-orange-500/15 text-orange-400 font-bold border border-orange-500/30 shadow-xs'
+              : 'text-zinc-300 hover:text-white hover:bg-zinc-800/60'
+          }`}
+        >
+          <FolderArchive className="w-3.5 h-3.5 text-orange-400" />
+          <span>Home Documents & Receipts</span>
+          {homeDocumentsCount !== undefined && (
+            <span className="px-1.5 py-0.2 rounded-full text-[10px] font-semibold bg-orange-950/60 text-orange-400 border border-orange-800/50">
+              {homeDocumentsCount}
+            </span>
+          )}
         </button>
 
         <div className="h-4 w-px bg-zinc-800 mx-1 shrink-0" />

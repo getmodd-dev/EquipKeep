@@ -32,6 +32,7 @@ interface DatabaseSchema {
   equipment: any[];
   serviceRecords: any[];
   projects?: any[];
+  homeDocuments?: any[];
   settings: {
     pushoverUserKey: string;
     pushoverApiToken: string;
@@ -662,6 +663,73 @@ const DEFAULT_DATA: DatabaseSchema = {
       updatedAt: '2026-05-10T10:00:00.000Z',
     },
   ],
+  homeDocuments: [
+    {
+      id: 'hdoc-1',
+      title: 'Homeowners Insurance Policy & Declaration of Coverage',
+      category: 'warranty_insurance',
+      fileName: 'Homeowners_Policy_StateFarm.pdf',
+      fileType: 'Insurance Policy',
+      dateAdded: '2026-01-15',
+      documentDate: '2026-01-15',
+      amount: 1650,
+      vendorOrIssuer: 'State Farm Insurance',
+      roomOrArea: 'Whole House / Dwelling',
+      notes: 'Annual policy renewal: includes $450k dwelling coverage, $100k liability, roof wind/hail endorsement. Policy #94-BQ-2911-3.',
+      isLocal: false,
+    },
+    {
+      id: 'hdoc-2',
+      title: 'Main Electrical Panel Circuit Schedule & Breaker Map',
+      category: 'utility_infrastructure',
+      fileType: 'Diagram / Blueprint',
+      dateAdded: '2025-09-10',
+      documentDate: '2025-08-12',
+      vendorOrIssuer: 'Apex Electric LLC',
+      roomOrArea: 'Basement Utility Room',
+      notes: 'Complete 200A 40-circuit Square D QO breaker index with EV charger sub-panel and solar interlock notes.',
+      isLocal: false,
+    },
+    {
+      id: 'hdoc-3',
+      title: 'Property Boundary Survey, Plat Map & Fence Permit',
+      category: 'permit_blueprint',
+      fileType: 'Official Permit & Map',
+      dateAdded: '2024-04-20',
+      documentDate: '2024-04-18',
+      amount: 420,
+      vendorOrIssuer: 'County Building & Zoning Dept',
+      roomOrArea: 'Property Lines & Rear Yard',
+      notes: 'Stamped surveyor plat showing utility easements, setback lines, and approved 6ft privacy fence permit #PRM-2024-881.',
+      isLocal: false,
+    },
+    {
+      id: 'hdoc-4',
+      title: 'Whole-House Exterior Paint Formulas & Trim Swatches',
+      category: 'paint_materials',
+      fileType: 'Formulas & Swatches',
+      dateAdded: '2025-06-25',
+      documentDate: '2025-06-22',
+      amount: 620,
+      vendorOrIssuer: 'Sherwin-Williams Store #3810',
+      roomOrArea: 'Exterior Siding, Soffits & Trim',
+      notes: 'Main Siding: SW 7005 Pure White (Emerald Exterior Satin). Front Door & Shutters: SW 7069 Iron Ore (Gloss). Porch Ceiling: SW 6483 Buxton Blue.',
+      isLocal: false,
+    },
+    {
+      id: 'hdoc-5',
+      title: 'GAF Timberline HDZ Architectural Roof Contract & 50-Yr Warranty',
+      category: 'receipt',
+      fileType: 'Contract & Warranty',
+      dateAdded: '2024-10-05',
+      documentDate: '2024-10-02',
+      amount: 12850,
+      vendorOrIssuer: 'Summit Peak Roofing Contractors',
+      roomOrArea: 'Roof & Gutters',
+      notes: 'Paid in full receipt and transferrable GAF Golden Pledge 50-year material and 25-year workmanship warranty certificate.',
+      isLocal: false,
+    },
+  ],
 };
 
 function readDatabase(): DatabaseSchema {
@@ -675,6 +743,7 @@ function readDatabase(): DatabaseSchema {
     if (!parsed.equipment) parsed.equipment = [];
     if (!parsed.serviceRecords) parsed.serviceRecords = [];
     if (!parsed.projects) parsed.projects = DEFAULT_DATA.projects || [];
+    if (!parsed.homeDocuments) parsed.homeDocuments = DEFAULT_DATA.homeDocuments || [];
     if (!parsed.settings) parsed.settings = DEFAULT_DATA.settings;
     return parsed;
   } catch (err) {
@@ -835,11 +904,40 @@ function ensureEquipmentFolder(eq: any, storagePath: string): { folderName: stri
   return { folderName, folderPath };
 }
 
+const HOME_DOCS_FOLDER_NAME = 'General_Home_Documents';
+
+// Ensure the general home documents & receipts folder exists in the storage location
+function ensureHomeDocumentsFolder(storagePath: string): { folderName: string; folderPath: string } {
+  ensureStorageLocationDir(storagePath);
+  const folderPath = path.join(storagePath, HOME_DOCS_FOLDER_NAME);
+  if (!fs.existsSync(folderPath)) {
+    fs.mkdirSync(folderPath, { recursive: true });
+  }
+
+  try {
+    const infoPath = path.join(folderPath, 'home-documents-info.json');
+    if (!fs.existsSync(infoPath)) {
+      const info = {
+        name: 'General Home Documents & Receipts',
+        folderPath,
+        lastSyncedAt: new Date().toISOString(),
+        readme: 'This directory stores whole-home manuals, permits, blueprints, insurance policies, contractor receipts, paint codes, and general home documentation in EquipKeep.',
+      };
+      fs.writeFileSync(infoPath, JSON.stringify(info, null, 2), 'utf-8');
+    }
+  } catch (err) {
+    // Non-fatal
+  }
+
+  return { folderName: HOME_DOCS_FOLDER_NAME, folderPath };
+}
+
 // Synchronize and ensure folders exist for all equipment in the DB
 function syncAllEquipmentFolders(db: DatabaseSchema): { total: number; storagePath: string; folders: string[] } {
   const storagePath = getStorageLocation(db);
   ensureStorageLocationDir(storagePath);
-  const folders: string[] = [];
+  ensureHomeDocumentsFolder(storagePath);
+  const folders: string[] = [HOME_DOCS_FOLDER_NAME];
 
   db.equipment.forEach((eq) => {
     const { folderName } = ensureEquipmentFolder(eq, storagePath);
@@ -1152,6 +1250,205 @@ app.post('/api/projects/:id/complete', (req: Request, res: Response) => {
 
   writeDatabase(db);
   res.json({ success: true, project });
+});
+
+// ==========================================
+// GENERAL HOME DOCUMENTS & RECEIPTS ENDPOINTS
+// ==========================================
+
+// Get all home documents
+app.get('/api/home-documents', (req: Request, res: Response) => {
+  const db = readDatabase();
+  res.json(db.homeDocuments || []);
+});
+
+// Upload a document or receipt to the General_Home_Documents storage folder
+app.post('/api/home-documents/upload', upload.single('file'), (req: Request, res: Response) => {
+  if (!req.file) {
+    res.status(400).json({ error: 'No file was provided for upload.' });
+    return;
+  }
+
+  const db = readDatabase();
+  const storagePath = getStorageLocation(db);
+  const { folderName, folderPath } = ensureHomeDocumentsFolder(storagePath);
+
+  const rawOriginalName = req.file.originalname || 'home_document';
+  const cleanBase = sanitizeName(path.parse(rawOriginalName).name);
+  const ext = path.extname(rawOriginalName) || '.pdf';
+  let targetFileName = `${cleanBase}${ext}`;
+
+  let targetPath = path.join(folderPath, targetFileName);
+  if (fs.existsSync(targetPath)) {
+    targetFileName = `${cleanBase}_${Date.now()}${ext}`;
+    targetPath = path.join(folderPath, targetFileName);
+  }
+
+  fs.writeFileSync(targetPath, req.file.buffer);
+
+  const isPdf = req.file.mimetype.includes('pdf') || ext.toLowerCase() === '.pdf';
+  const isImage = req.file.mimetype.startsWith('image/');
+  let fileType = req.body.fileType?.trim() || (isPdf ? 'PDF Document' : isImage ? 'Image / Photo' : 'Document');
+
+  const newDoc = {
+    id: `hdoc-${Date.now()}`,
+    title: req.body.title?.trim() || cleanBase.replace(/_/g, ' '),
+    category: req.body.category?.trim() || 'other',
+    fileName: targetFileName,
+    filePath: path.join(folderName, targetFileName),
+    fileSize: req.file.size,
+    mimeType: req.file.mimetype || (isPdf ? 'application/pdf' : 'application/octet-stream'),
+    fileType,
+    url: `/api/storage/home-files/${encodeURIComponent(targetFileName)}`,
+    notes: req.body.notes?.trim() || undefined,
+    dateAdded: new Date().toISOString().split('T')[0],
+    documentDate: req.body.documentDate?.trim() || new Date().toISOString().split('T')[0],
+    amount: req.body.amount !== undefined && req.body.amount !== '' ? parseFloat(req.body.amount) : undefined,
+    vendorOrIssuer: req.body.vendorOrIssuer?.trim() || undefined,
+    roomOrArea: req.body.roomOrArea?.trim() || undefined,
+    tags: req.body.tags ? (typeof req.body.tags === 'string' ? req.body.tags.split(',').map((t: string) => t.trim()).filter(Boolean) : req.body.tags) : undefined,
+    isLocal: true,
+  };
+
+  if (!db.homeDocuments) db.homeDocuments = [];
+  db.homeDocuments.unshift(newDoc);
+  writeDatabase(db);
+
+  res.json({
+    success: true,
+    document: newDoc,
+    message: `Saved ${targetFileName} to ${folderName}/`,
+  });
+});
+
+// Add a document web link or cloud manual URL
+app.post('/api/home-documents/link', (req: Request, res: Response) => {
+  const db = readDatabase();
+  const { title, url, category, notes, documentDate, amount, vendorOrIssuer, roomOrArea, tags, fileType } = req.body;
+
+  if (!title || !title.trim()) {
+    res.status(400).json({ error: 'Document title is required.' });
+    return;
+  }
+
+  const newDoc = {
+    id: `hdoc-${Date.now()}`,
+    title: title.trim(),
+    category: category?.trim() || 'other',
+    url: url?.trim() || undefined,
+    fileType: fileType?.trim() || 'Web Link / Cloud Document',
+    notes: notes?.trim() || undefined,
+    dateAdded: new Date().toISOString().split('T')[0],
+    documentDate: documentDate?.trim() || new Date().toISOString().split('T')[0],
+    amount: amount !== undefined && amount !== '' ? parseFloat(amount) : undefined,
+    vendorOrIssuer: vendorOrIssuer?.trim() || undefined,
+    roomOrArea: roomOrArea?.trim() || undefined,
+    tags: tags ? (typeof tags === 'string' ? tags.split(',').map((t: string) => t.trim()).filter(Boolean) : tags) : undefined,
+    isLocal: false,
+  };
+
+  if (!db.homeDocuments) db.homeDocuments = [];
+  db.homeDocuments.unshift(newDoc);
+  writeDatabase(db);
+
+  res.json({
+    success: true,
+    document: newDoc,
+  });
+});
+
+// Update an existing home document metadata
+app.put('/api/home-documents/:id', (req: Request, res: Response) => {
+  const db = readDatabase();
+  if (!db.homeDocuments) db.homeDocuments = [];
+  const index = db.homeDocuments.findIndex((d: any) => d.id === req.params.id);
+  if (index === -1) {
+    res.status(404).json({ error: 'Document not found' });
+    return;
+  }
+
+  const existing = db.homeDocuments[index];
+  const { title, category, notes, documentDate, amount, vendorOrIssuer, roomOrArea, tags, url, fileType } = req.body;
+
+  db.homeDocuments[index] = {
+    ...existing,
+    title: title !== undefined ? title.trim() : existing.title,
+    category: category !== undefined ? category.trim() : existing.category,
+    fileType: fileType !== undefined ? fileType.trim() : existing.fileType,
+    notes: notes !== undefined ? (notes.trim() || undefined) : existing.notes,
+    documentDate: documentDate !== undefined ? (documentDate.trim() || undefined) : existing.documentDate,
+    amount: amount !== undefined && amount !== '' ? parseFloat(amount) : (amount === '' ? undefined : existing.amount),
+    vendorOrIssuer: vendorOrIssuer !== undefined ? (vendorOrIssuer.trim() || undefined) : existing.vendorOrIssuer,
+    roomOrArea: roomOrArea !== undefined ? (roomOrArea.trim() || undefined) : existing.roomOrArea,
+    tags: tags !== undefined ? (typeof tags === 'string' ? tags.split(',').map((t: string) => t.trim()).filter(Boolean) : tags) : existing.tags,
+    url: url !== undefined ? (url.trim() || undefined) : existing.url,
+  };
+
+  writeDatabase(db);
+  res.json({ success: true, document: db.homeDocuments[index] });
+});
+
+// Delete a home document (and local file if exists)
+app.delete('/api/home-documents/:id', (req: Request, res: Response) => {
+  const db = readDatabase();
+  if (!db.homeDocuments) db.homeDocuments = [];
+
+  const doc = db.homeDocuments.find((d: any) => d.id === req.params.id);
+  if (!doc) {
+    res.status(404).json({ error: 'Document not found' });
+    return;
+  }
+
+  if (doc.isLocal && doc.fileName) {
+    try {
+      const storagePath = getStorageLocation(db);
+      const filePath = path.join(storagePath, HOME_DOCS_FOLDER_NAME, doc.fileName);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    } catch (err) {
+      console.warn('Could not delete local file:', err);
+    }
+  }
+
+  db.homeDocuments = db.homeDocuments.filter((d: any) => d.id !== req.params.id);
+  writeDatabase(db);
+  res.json({ success: true, deletedId: req.params.id });
+});
+
+// Serve local general home files directly
+app.get('/api/storage/home-files/:fileName', (req: Request, res: Response) => {
+  const db = readDatabase();
+  const storagePath = getStorageLocation(db);
+  const decodedFileName = path.basename(decodeURIComponent(req.params.fileName));
+  const fullFolder = path.resolve(storagePath, HOME_DOCS_FOLDER_NAME);
+  const resolvedFile = path.resolve(fullFolder, decodedFileName);
+
+  if (!resolvedFile.startsWith(fullFolder)) {
+    res.status(403).send('Forbidden file path access');
+    return;
+  }
+
+  if (!fs.existsSync(resolvedFile)) {
+    res.status(404).send('File not found on disk');
+    return;
+  }
+
+  const ext = path.extname(decodedFileName).toLowerCase();
+  if (ext === '.pdf') {
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${decodedFileName}"`);
+  } else if (['.jpg', '.jpeg'].includes(ext)) {
+    res.setHeader('Content-Type', 'image/jpeg');
+  } else if (ext === '.png') {
+    res.setHeader('Content-Type', 'image/png');
+  } else if (ext === '.webp') {
+    res.setHeader('Content-Type', 'image/webp');
+  } else {
+    res.setHeader('Content-Disposition', `attachment; filename="${decodedFileName}"`);
+  }
+
+  res.sendFile(resolvedFile);
 });
 
 // ==========================================

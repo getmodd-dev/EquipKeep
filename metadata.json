@@ -1,6 +1,6 @@
 {
   "name": "EquipKeep",
-  "description": "Self-hosted hub for appliances, large equipment, and home project scheduling with Pushover alerts, warranty tracking, and service history.",
+  "description": "Self-hosted hub for appliances, large equipment, home project scheduling, and whole-house document/receipt storage with Pushover alerts, warranty tracking, and service history.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
