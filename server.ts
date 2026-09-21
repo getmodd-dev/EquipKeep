@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 import multer from 'multer';
 import { createServer as createViteServer } from 'vite';
 import dotenv from 'dotenv';
@@ -1973,6 +1974,31 @@ app.post('/api/settings', (req: Request, res: Response) => {
   };
   writeDatabase(db);
   res.json(db.settings);
+});
+
+// Network host info (helps users scanning QR codes on local Wi-Fi / Unraid LAN)
+app.get('/api/network/host-info', (req: Request, res: Response) => {
+  try {
+    const interfaces = os.networkInterfaces();
+    const ips: string[] = [];
+    for (const name of Object.keys(interfaces)) {
+      const netList = interfaces[name];
+      if (netList) {
+        for (const net of netList) {
+          if (net.family === 'IPv4' && !net.internal) {
+            ips.push(net.address);
+          }
+        }
+      }
+    }
+    res.json({
+      ips,
+      primaryIp: ips[0] || null,
+      port: PORT,
+    });
+  } catch (err: any) {
+    res.json({ ips: [], primaryIp: null, port: PORT });
+  }
 });
 
 // Pushover Test endpoint

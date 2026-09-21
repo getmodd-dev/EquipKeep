@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Wrench,
   Search,
@@ -34,6 +34,54 @@ import { Equipment, ServiceRecord, PushoverConfig, MaintenanceTask, HomeProject,
 import { CATEGORIES, getEquipmentSection, EQUIPMENT_SECTIONS } from './utils/categories';
 import { getWarrantyStatus, getDaysDifference, getTodayDateString } from './utils/date';
 
+function extractTargetEquipmentIdFromUrl(): string | null {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    // 1. Search query string: ?equipment=... or ?id=...
+    const searchParams = new URLSearchParams(window.location.search);
+    const fromSearch = searchParams.get('equipment') || searchParams.get('id');
+    if (fromSearch && fromSearch.trim()) {
+      return decodeURIComponent(fromSearch.trim());
+    }
+
+    // 2. Hash fragments: #equipment=... or #?equipment=... or #/equipment/... or #eq-...
+    const rawHash = window.location.hash || '';
+    const hash = rawHash.replace(/^#\/?/, '').trim();
+    if (hash) {
+      if (hash.startsWith('equipment=')) {
+        return decodeURIComponent(hash.split('equipment=')[1].split('&')[0].trim());
+      }
+      if (hash.startsWith('id=')) {
+        return decodeURIComponent(hash.split('id=')[1].split('&')[0].trim());
+      }
+      if (hash.startsWith('equipment/')) {
+        return decodeURIComponent(hash.replace(/^equipment\//, '').split(/[/?&#]/)[0].trim());
+      }
+      if (hash.includes('?')) {
+        const hashQuery = new URLSearchParams(hash.substring(hash.indexOf('?') + 1));
+        const fromHashQuery = hashQuery.get('equipment') || hashQuery.get('id');
+        if (fromHashQuery && fromHashQuery.trim()) {
+          return decodeURIComponent(fromHashQuery.trim());
+        }
+      }
+      if (hash.startsWith('eq-')) {
+        return decodeURIComponent(hash.split(/[/?&#]/)[0].trim());
+      }
+    }
+
+    // 3. Pathname: /equipment/:id
+    const pathMatch = window.location.pathname.match(/\/equipment\/([^/?#]+)/);
+    if (pathMatch && pathMatch[1]) {
+      return decodeURIComponent(pathMatch[1].trim());
+    }
+  } catch (err) {
+    console.error('Failed to parse equipment target from URL:', err);
+  }
+
+  return null;
+}
+
 export default function App() {
   const [equipmentList, setEquipmentList] = useState<Equipment[]>([]);
   const [serviceRecords, setServiceRecords] = useState<ServiceRecord[]>([]);
@@ -50,6 +98,10 @@ export default function App() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<AppTab>('appliances_electronics');
+
+  // Captured synchronously upon initial page load so that query parameters are never wiped out by race conditions
+  const [initialDeepLinkId, setInitialDeepLinkId] = useState<string | null>(() => extractTargetEquipmentIdFromUrl());
+  const initialDeepLinkHandledRef = useRef(false);
 
   // Modals state
   const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null);
@@ -127,31 +179,92 @@ export default function App() {
     fetchData();
   }, []);
 
-  // Detect ?equipment=<id> in URL from scanned QR codes
+  // Detect ?equipment=<id> or QR deep link in URL from scanned QR codes
   useEffect(() => {
     if (equipmentList.length === 0) return;
-    const params = new URLSearchParams(window.location.search);
-    const targetId = params.get('equipment') || params.get('id');
-    if (targetId) {
-      const found = equipmentList.find((e) => e.id === targetId);
+
+    // Check if there is an initial deep link or current URL param
+    const targetId = initialDeepLinkId || extractTargetEquipmentIdFromUrl();
+    if (targetId && !initialDeepLinkHandledRef.current) {
+      const found = equipmentList.find(
+        (e) => e.id === targetId || e.id.toLowerCase() === targetId.toLowerCase()
+      );
       if (found) {
         setSelectedEquipment(found);
+        initialDeepLinkHandledRef.current = true;
+        setInitialDeepLinkId(null);
+
+        // Switch to the relevant section tab so the background view corresponds to this item
+        const sec = found.section || getEquipmentSection(found.category);
+        if (sec === 'appliances_electronics' || sec === 'large_equipment') {
+          setActiveTab(sec);
+        }
+
+        addToast('info', 'Appliance Opened', `Loaded "${found.name}" from QR link.`);
+      } else if (!isLoading) {
+        // Data has loaded but ID was not found
+        initialDeepLinkHandledRef.current = true;
+        setInitialDeepLinkId(null);
+        addToast('error', 'Equipment Not Found', `No appliance or equipment found with ID "${targetId}".`);
       }
     }
-  }, [equipmentList]);
+  }, [equipmentList, initialDeepLinkId, isLoading]);
 
-  // Keep URL search param in sync when selecting equipment
+  // Keep URL search param in sync when selecting/closing equipment
   useEffect(() => {
     if (typeof window === 'undefined') return;
+
+    // CRITICAL FIX: Do NOT clear URL query params while initial data is still loading
+    // or before the initial deep-link has had a chance to match against the loaded equipment list!
+    if (isLoading || (!initialDeepLinkHandledRef.current && initialDeepLinkId)) {
+      return;
+    }
+
     const url = new URL(window.location.href);
     if (selectedEquipment) {
       url.searchParams.set('equipment', selectedEquipment.id);
     } else {
       url.searchParams.delete('equipment');
       url.searchParams.delete('id');
+      // If path was /equipment/:id, revert to root
+      if (url.pathname.includes('/equipment/')) {
+        url.pathname = '/';
+      }
+      // If hash was #equipment=..., clear hash
+      if (window.location.hash.includes('equipment') || window.location.hash.startsWith('#eq-')) {
+        url.hash = '';
+      }
     }
     window.history.replaceState({}, '', url.toString());
-  }, [selectedEquipment]);
+  }, [selectedEquipment, isLoading, initialDeepLinkId]);
+
+  // Listen for browser back/forward buttons or manual hash/URL changes
+  useEffect(() => {
+    const handleNavigation = () => {
+      const targetId = extractTargetEquipmentIdFromUrl();
+      if (targetId && equipmentList.length > 0) {
+        const found = equipmentList.find(
+          (e) => e.id === targetId || e.id.toLowerCase() === targetId.toLowerCase()
+        );
+        if (found) {
+          setSelectedEquipment(found);
+          const sec = found.section || getEquipmentSection(found.category);
+          if (sec === 'appliances_electronics' || sec === 'large_equipment') {
+            setActiveTab(sec);
+          }
+        }
+      } else if (!targetId) {
+        setSelectedEquipment(null);
+      }
+    };
+
+    window.addEventListener('popstate', handleNavigation);
+    window.addEventListener('hashchange', handleNavigation);
+    return () => {
+      window.removeEventListener('popstate', handleNavigation);
+      window.removeEventListener('hashchange', handleNavigation);
+    };
+  }, [equipmentList]);
 
   // Section items breakdown
   const appliancesList = useMemo(() => {

@@ -47,6 +47,8 @@ export function QRCodeModal({
   // Custom host URL settings (homelab local IP vs cloud URL)
   const [customHost, setCustomHost] = useState('');
   const [isEditingHost, setIsEditingHost] = useState(false);
+  const [detectedLanIps, setDetectedLanIps] = useState<string[]>([]);
+  const [detectedPort, setDetectedPort] = useState<number>(3000);
 
   // Label options
   const [showFilterSpecs, setShowFilterSpecs] = useState(true);
@@ -62,7 +64,7 @@ export function QRCodeModal({
   const currentEquipment =
     allEquipment.find((e) => e.id === selectedEquipmentId) || initialEquipment || allEquipment[0];
 
-  // Initialize host and batch list on mount
+  // Initialize host, detect LAN IPs, and batch list on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const defaultOrigin = window.location.origin;
@@ -71,6 +73,19 @@ export function QRCodeModal({
     if (allEquipment.length > 0) {
       setBatchSelectedIds(allEquipment.map((e) => e.id));
     }
+
+    // Attempt to query server host info for local LAN IP
+    fetch('/api/network/host-info')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.ips && Array.isArray(data.ips)) {
+          setDetectedLanIps(data.ips);
+        }
+        if (data.port) {
+          setDetectedPort(data.port);
+        }
+      })
+      .catch(() => {});
   }, [allEquipment]);
 
   useEffect(() => {
@@ -82,7 +97,15 @@ export function QRCodeModal({
 
   // Construct target deep-link URL for an equipment item
   const getEquipmentUrl = (eqId: string): string => {
-    const base = (customHost || (typeof window !== 'undefined' ? window.location.origin : '')).replace(/\/+$/, '');
+    let base = (customHost || (typeof window !== 'undefined' ? window.location.origin : '')).trim();
+    if (!base && typeof window !== 'undefined') {
+      base = window.location.origin;
+    }
+    // Automatically prepend http:// if protocol is omitted so phones treat it as a clickable web address
+    if (base && !base.match(/^https?:\/\//i)) {
+      base = `http://${base}`;
+    }
+    base = base.replace(/\/+$/, '');
     return `${base}/?equipment=${encodeURIComponent(eqId)}`;
   };
 
@@ -482,45 +505,98 @@ export function QRCodeModal({
                     <button
                       type="button"
                       onClick={() => setIsEditingHost(false)}
-                      className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-zinc-800 text-white"
+                      className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-zinc-800 text-white hover:bg-zinc-700 transition-colors"
                     >
                       Apply
                     </button>
                   </div>
+
+                  {/* Detected LAN IPs & Quick Presets */}
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[11px]">
+                    <span className="text-zinc-500">Quick presets:</span>
+                    {detectedLanIps.map((ip) => (
+                      <button
+                        key={ip}
+                        type="button"
+                        onClick={() => setCustomHost(`http://${ip}:${detectedPort}`)}
+                        className="px-2 py-0.5 rounded bg-orange-50 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-800 hover:bg-orange-100 dark:hover:bg-orange-900 font-mono transition-colors"
+                      >
+                        LAN IP ({ip}:{detectedPort})
+                      </button>
+                    ))}
+                    {typeof window !== 'undefined' && (
+                      <button
+                        type="button"
+                        onClick={() => setCustomHost(window.location.origin)}
+                        className="px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-200 font-mono transition-colors"
+                      >
+                        Browser Origin
+                      </button>
+                    )}
+                  </div>
+
                   <p className="text-[11px] text-zinc-500">
-                    Tip: If scanning from your mobile phone camera while connected to home Wi-Fi, enter your local server IP (e.g. <code className="font-mono text-orange-600">http://192.168.1.100:3100</code>).
+                    Tip: If scanning printed tags with your phone camera, use your local Unraid or server IP so the phone can reach the app over your home Wi-Fi network.
                   </p>
                 </div>
               ) : (
-                <div className="flex flex-wrap items-center justify-between gap-2 p-2 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-[11px] font-mono">
-                  <div className="flex items-center gap-2 truncate text-zinc-600 dark:text-zinc-400">
-                    <span className="text-zinc-400">Target Link:</span>
-                    <span className="text-zinc-900 dark:text-zinc-200 truncate font-semibold">
-                      {targetUrl || 'Select equipment'}
-                    </span>
+                <div className="space-y-1.5">
+                  <div className="flex flex-wrap items-center justify-between gap-2 p-2 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-[11px] font-mono">
+                    <div className="flex items-center gap-2 truncate text-zinc-600 dark:text-zinc-400">
+                      <span className="text-zinc-400">Target Link:</span>
+                      <span className="text-zinc-900 dark:text-zinc-200 truncate font-semibold">
+                        {targetUrl || 'Select equipment'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={handleCopyLink}
+                        className="text-orange-600 dark:text-orange-400 hover:underline flex items-center gap-1 font-sans font-semibold"
+                      >
+                        {copiedUrl ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                        <span>{copiedUrl ? 'Copied' : 'Copy Link'}</span>
+                      </button>
+                      {targetUrl && (
+                        <a
+                          href={targetUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+                          title="Test opening link"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      type="button"
-                      onClick={handleCopyLink}
-                      className="text-orange-600 dark:text-orange-400 hover:underline flex items-center gap-1 font-sans font-semibold"
-                    >
-                      {copiedUrl ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                      <span>{copiedUrl ? 'Copied' : 'Copy Link'}</span>
-                    </button>
-                    {targetUrl && (
-                      <a
-                        href={targetUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
-                        title="Test opening link"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
-                    )}
-                  </div>
+                  {/* Localhost Warning */}
+                  {(customHost.includes('localhost') || customHost.includes('127.0.0.1')) && (
+                    <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-[11px] text-amber-800 dark:text-amber-300">
+                      <div className="flex items-center gap-1.5">
+                        <span>⚠️ QR currently contains <strong>localhost</strong>. Phone cameras cannot connect to localhost.</span>
+                      </div>
+                      {detectedLanIps.length > 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => setCustomHost(`http://${detectedLanIps[0]}:${detectedPort}`)}
+                          className="shrink-0 px-2 py-0.5 rounded bg-amber-200 dark:bg-amber-900/80 font-bold hover:bg-amber-300 text-amber-900 dark:text-amber-100 transition-colors"
+                        >
+                          Switch to LAN IP ({detectedLanIps[0]})
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setIsEditingHost(true)}
+                          className="shrink-0 font-bold underline hover:text-amber-900 dark:hover:text-amber-100"
+                        >
+                          Set LAN IP
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
