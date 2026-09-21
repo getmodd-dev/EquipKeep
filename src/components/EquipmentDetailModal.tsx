@@ -33,9 +33,16 @@ import {
   Printer,
   UserCheck,
   Building2,
-  Tractor
+  Tractor,
+  Search,
+  Bell,
+  BellOff,
+  Pencil,
+  Globe,
+  ShieldOff,
+  Link as LinkIcon
 } from 'lucide-react';
-import { Equipment, MaintenanceTask, ServiceRecord, DocumentItem } from '../types';
+import { Equipment, MaintenanceTask, ServiceRecord, DocumentItem, WarrantyType } from '../types';
 import { CATEGORIES } from '../utils/categories';
 import { formatDate, formatCurrency, getWarrantyStatus, getDaysDifference } from '../utils/date';
 
@@ -183,6 +190,179 @@ export function EquipmentDetailModal({
   const handleDeleteTask = (taskId: string) => {
     const updatedTasks = (equipment.maintenanceTasks || []).filter((t) => t.id !== taskId);
     onUpdateEquipment({ ...equipment, maintenanceTasks: updatedTasks });
+  };
+
+  // Edit task state and handlers
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editTaskTitle, setEditTaskTitle] = useState('');
+  const [editTaskInterval, setEditTaskInterval] = useState(90);
+  const [editTaskNextDueDate, setEditTaskNextDueDate] = useState('');
+  const [editTaskLastCompletedDate, setEditTaskLastCompletedDate] = useState('');
+  const [editTaskInstructions, setEditTaskInstructions] = useState('');
+  const [editTaskPriority, setEditTaskPriority] = useState<'low' | 'normal' | 'high'>('normal');
+  const [editTaskSpecs, setEditTaskSpecs] = useState('');
+
+  const handleStartEditTask = (task: MaintenanceTask) => {
+    setEditingTaskId(task.id);
+    setEditTaskTitle(task.title);
+    setEditTaskInterval(task.intervalDays || 90);
+    setEditTaskNextDueDate(task.nextDueDate || '');
+    setEditTaskLastCompletedDate(task.lastCompletedDate || '');
+    setEditTaskInstructions(task.instructions || '');
+    setEditTaskPriority(task.priority || 'normal');
+    setEditTaskSpecs(task.filterOrPartSpecs || '');
+  };
+
+  const handleSaveEditTask = () => {
+    if (!editingTaskId || !editTaskTitle.trim()) return;
+    const updatedTasks = (equipment.maintenanceTasks || []).map((t) => {
+      if (t.id !== editingTaskId) return t;
+      return {
+        ...t,
+        title: editTaskTitle.trim(),
+        intervalDays: Number(editTaskInterval) || 30,
+        nextDueDate: editTaskNextDueDate || t.nextDueDate,
+        lastCompletedDate: editTaskLastCompletedDate.trim() || undefined,
+        instructions: editTaskInstructions.trim() || undefined,
+        priority: editTaskPriority,
+        filterOrPartSpecs: editTaskSpecs.trim() || undefined,
+      };
+    });
+    onUpdateEquipment({ ...equipment, maintenanceTasks: updatedTasks });
+    setEditingTaskId(null);
+  };
+
+  const handleCancelEditTask = () => {
+    setEditingTaskId(null);
+  };
+
+  // Warranty editing and removing state
+  const [isEditingWarranty, setIsEditingWarranty] = useState(false);
+  const [editWarrantyType, setEditWarrantyType] = useState<WarrantyType>(equipment.warranty?.type || 'manufacturer');
+  const [editWarrantyExpiration, setEditWarrantyExpiration] = useState(equipment.warranty?.expirationDate || '');
+  const [editWarrantyProvider, setEditWarrantyProvider] = useState(equipment.warranty?.provider || '');
+  const [editWarrantyPolicy, setEditWarrantyPolicy] = useState(equipment.warranty?.policyNumber || '');
+  const [editWarrantyContact, setEditWarrantyContact] = useState(equipment.warranty?.contactPhoneOrUrl || '');
+  const [editWarrantyNotes, setEditWarrantyNotes] = useState(equipment.warranty?.notes || '');
+  const [editHasLifetimeWarranty, setEditHasLifetimeWarranty] = useState(
+    equipment.warranty?.hasLifetimeWarranty || equipment.warranty?.type === 'lifetime' || false
+  );
+
+  const handleStartEditWarranty = () => {
+    setEditWarrantyType(equipment.warranty?.type || 'manufacturer');
+    setEditWarrantyExpiration(equipment.warranty?.expirationDate || '');
+    setEditWarrantyProvider(equipment.warranty?.provider || '');
+    setEditWarrantyPolicy(equipment.warranty?.policyNumber || '');
+    setEditWarrantyContact(equipment.warranty?.contactPhoneOrUrl || '');
+    setEditWarrantyNotes(equipment.warranty?.notes || '');
+    setEditHasLifetimeWarranty(
+      equipment.warranty?.hasLifetimeWarranty || equipment.warranty?.type === 'lifetime' || false
+    );
+    setIsEditingWarranty(true);
+  };
+
+  const handleSaveWarranty = () => {
+    const updatedWarranty = {
+      type: editHasLifetimeWarranty ? ('lifetime' as const) : editWarrantyType,
+      expirationDate: editHasLifetimeWarranty || editWarrantyType === 'none' ? '' : editWarrantyExpiration,
+      provider: editWarrantyType === 'none' ? undefined : (editWarrantyProvider.trim() || undefined),
+      policyNumber: editWarrantyType === 'none' ? undefined : (editWarrantyPolicy.trim() || undefined),
+      contactPhoneOrUrl: editWarrantyType === 'none' ? undefined : (editWarrantyContact.trim() || undefined),
+      notes: editWarrantyType === 'none' ? undefined : (editWarrantyNotes.trim() || undefined),
+      hasLifetimeWarranty: editWarrantyType === 'none' ? false : editHasLifetimeWarranty,
+      disableAlerts: equipment.warranty?.disableAlerts ?? equipment.disableAlerts ?? false,
+    };
+    onUpdateEquipment({ ...equipment, warranty: updatedWarranty });
+    setIsEditingWarranty(false);
+  };
+
+  const handleRemoveWarranty = () => {
+    if (confirm(`Are you sure you want to remove all warranty information for ${equipment.name}?`)) {
+      const updatedWarranty = {
+        type: 'none' as const,
+        expirationDate: '',
+        provider: undefined,
+        policyNumber: undefined,
+        contactPhoneOrUrl: undefined,
+        notes: undefined,
+        hasLifetimeWarranty: false,
+        disableAlerts: equipment.warranty?.disableAlerts ?? equipment.disableAlerts ?? false,
+      };
+      onUpdateEquipment({ ...equipment, warranty: updatedWarranty });
+      setIsEditingWarranty(false);
+    }
+  };
+
+  // Alerts toggles for this item
+  const isAlertsMuted = Boolean(equipment.disableAlerts || equipment.warranty?.disableAlerts);
+
+  const handleToggleAlerts = () => {
+    const currentlyMuted = isAlertsMuted;
+    const newDisableState = !currentlyMuted;
+    const updated = {
+      ...equipment,
+      disableAlerts: newDisableState,
+      warranty: {
+        ...equipment.warranty,
+        disableAlerts: newDisableState,
+      },
+    };
+    onUpdateEquipment(updated);
+  };
+
+  const handleToggleWarrantyAlertsOnly = () => {
+    const newDisableState = !equipment.warranty?.disableAlerts;
+    const updated = {
+      ...equipment,
+      warranty: {
+        ...equipment.warranty,
+        disableAlerts: newDisableState,
+      },
+    };
+    onUpdateEquipment(updated);
+  };
+
+  // Find Manual Online modal state
+  const [isFindManualOpen, setIsFindManualOpen] = useState(false);
+  const [manualSearchQuery, setManualSearchQuery] = useState(
+    `${equipment.brand} ${equipment.modelNumber || equipment.name} manual pdf`
+  );
+  const [manualLinkTitle, setManualLinkTitle] = useState(
+    `${equipment.brand} ${equipment.modelNumber || equipment.name} Owner's Manual`
+  );
+  const [manualLinkUrl, setManualLinkUrl] = useState('');
+  const [copiedManualSearch, setCopiedManualSearch] = useState(false);
+
+  useEffect(() => {
+    setManualSearchQuery(`${equipment.brand} ${equipment.modelNumber || equipment.name} manual pdf`);
+    setManualLinkTitle(`${equipment.brand} ${equipment.modelNumber || equipment.name} Owner's Manual`);
+  }, [equipment.brand, equipment.modelNumber, equipment.name]);
+
+  const handleCopyManualQuery = () => {
+    navigator.clipboard.writeText(manualSearchQuery);
+    setCopiedManualSearch(true);
+    setTimeout(() => setCopiedManualSearch(false), 2000);
+  };
+
+  const handleSaveManualLink = () => {
+    if (!manualLinkUrl.trim()) return;
+    const newDoc: DocumentItem = {
+      id: `doc-${Date.now()}`,
+      title: manualLinkTitle.trim() || `${equipment.brand} ${equipment.modelNumber || equipment.name} Owner's Manual`,
+      fileType: 'PDF Manual',
+      url: manualLinkUrl.trim(),
+      notes: 'Found online via Manual Search',
+      dateAdded: new Date().toISOString(),
+      isLocal: false,
+    };
+    const updatedDocs = [...(equipment.documents || []), newDoc];
+    onUpdateEquipment({ ...equipment, documents: updatedDocs });
+    setManualLinkUrl('');
+    setIsFindManualOpen(false);
+    setStorageFeedback({
+      text: 'Saved online manual link to appliance documents successfully!',
+      type: 'success',
+    });
   };
 
   // Upload document directly to appliance's folder on disk
@@ -475,6 +655,36 @@ export function EquipmentDetailModal({
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
+            {/* Find Manual Online quick action */}
+            <button
+              type="button"
+              onClick={() => setIsFindManualOpen(true)}
+              className="px-2.5 py-1.5 rounded-lg bg-orange-50 dark:bg-orange-950/40 hover:bg-orange-100 dark:hover:bg-orange-900/60 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-800 transition-colors flex items-center gap-1.5 text-xs font-semibold"
+              title="Search and find appliance manuals online"
+            >
+              <Search className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400" />
+              <span className="hidden sm:inline">Find Manual</span>
+            </button>
+
+            {/* Mute/Enable Alerts Quick Toggle */}
+            <button
+              type="button"
+              onClick={handleToggleAlerts}
+              className={`px-2.5 py-1.5 rounded-lg border transition-colors flex items-center gap-1.5 text-xs font-semibold ${
+                isAlertsMuted
+                  ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 hover:text-orange-600'
+                  : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+              }`}
+              title={isAlertsMuted ? 'Alerts are muted for this item. Click to enable.' : 'Alerts are active for this item. Click to mute.'}
+            >
+              {isAlertsMuted ? (
+                <BellOff className="w-3.5 h-3.5 text-zinc-400" />
+              ) : (
+                <Bell className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              )}
+              <span className="hidden md:inline">{isAlertsMuted ? 'Alerts Muted' : 'Alerts On'}</span>
+            </button>
+
             {onOpenQRCode && (
               <button
                 type="button"
@@ -1047,6 +1257,139 @@ export function EquipmentDetailModal({
               ) : (
                 <div className="space-y-3">
                   {equipment.maintenanceTasks.map((task) => {
+                    if (editingTaskId === task.id) {
+                      return (
+                        <div
+                          key={task.id}
+                          className="p-4 rounded-xl bg-orange-50/30 dark:bg-zinc-900 border border-orange-300 dark:border-orange-700/70 space-y-3 shadow-xs"
+                        >
+                          <div className="flex items-center justify-between border-b border-orange-200 dark:border-zinc-800 pb-2">
+                            <h4 className="text-xs font-bold text-orange-950 dark:text-orange-300 uppercase tracking-wider flex items-center gap-1.5">
+                              <Pencil className="w-3.5 h-3.5 text-orange-500" />
+                              Edit Maintenance Task
+                            </h4>
+                            <button
+                              type="button"
+                              onClick={handleCancelEditTask}
+                              className="text-xs font-medium text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div className="sm:col-span-2">
+                              <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                                Task Title *
+                              </label>
+                              <input
+                                type="text"
+                                value={editTaskTitle}
+                                onChange={(e) => setEditTaskTitle(e.target.value)}
+                                className="w-full px-3 py-1.5 text-xs rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 focus:ring-1 focus:ring-orange-500"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                                Recurrence (Days) *
+                              </label>
+                              <input
+                                type="number"
+                                value={editTaskInterval}
+                                onChange={(e) => setEditTaskInterval(Number(e.target.value) || 30)}
+                                min={1}
+                                className="w-full px-3 py-1.5 text-xs rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                                Next Due Date *
+                              </label>
+                              <input
+                                type="date"
+                                value={editTaskNextDueDate}
+                                onChange={(e) => setEditTaskNextDueDate(e.target.value)}
+                                className="w-full px-3 py-1.5 text-xs rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                                Last Completed Date
+                              </label>
+                              <input
+                                type="date"
+                                value={editTaskLastCompletedDate}
+                                onChange={(e) => setEditTaskLastCompletedDate(e.target.value)}
+                                className="w-full px-3 py-1.5 text-xs rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                                Priority Level
+                              </label>
+                              <select
+                                value={editTaskPriority}
+                                onChange={(e) => setEditTaskPriority(e.target.value as any)}
+                                className="w-full px-3 py-1.5 text-xs rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
+                              >
+                                <option value="low">Low</option>
+                                <option value="normal">Normal</option>
+                                <option value="high">High (Critical)</option>
+                              </select>
+                            </div>
+
+                            <div className="sm:col-span-3">
+                              <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                                Consumable / Part Specification
+                              </label>
+                              <input
+                                type="text"
+                                value={editTaskSpecs}
+                                onChange={(e) => setEditTaskSpecs(e.target.value)}
+                                placeholder="e.g. Filter #FC100A1037 / Oil 10W-30"
+                                className="w-full px-3 py-1.5 text-xs rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-mono"
+                              />
+                            </div>
+
+                            <div className="sm:col-span-3">
+                              <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                                Maintenance Instructions &amp; Safety
+                              </label>
+                              <textarea
+                                value={editTaskInstructions}
+                                onChange={(e) => setEditTaskInstructions(e.target.value)}
+                                rows={2}
+                                placeholder="Step by step maintenance instructions..."
+                                className="w-full px-3 py-1.5 text-xs rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex justify-end gap-2 pt-2 border-t border-zinc-200 dark:border-zinc-800">
+                            <button
+                              type="button"
+                              onClick={handleCancelEditTask}
+                              className="px-3 py-1.5 text-xs font-semibold rounded-lg text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleSaveEditTask}
+                              disabled={!editTaskTitle.trim()}
+                              className="px-4 py-1.5 text-xs font-semibold rounded-lg bg-orange-600 hover:bg-orange-500 disabled:opacity-50 text-white shadow-xs"
+                            >
+                              Save Task Changes
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    }
+
                     const daysLeft = getDaysDifference(task.nextDueDate);
                     const isOverdue = daysLeft !== null && daysLeft < 0;
 
@@ -1122,6 +1465,14 @@ export function EquipmentDetailModal({
                             >
                               <CheckCircle2 className="w-3.5 h-3.5" />
                               <span>Mark Done & Log</span>
+                            </button>
+
+                            <button
+                              onClick={() => handleStartEditTask(task)}
+                              className="p-1.5 rounded-lg text-zinc-400 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/40 transition-colors"
+                              title="Edit maintenance task"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
                             </button>
 
                             <button
@@ -1312,16 +1663,32 @@ export function EquipmentDetailModal({
                   </p>
                 </div>
 
-                <button
-                  onClick={() => {
-                    setIsAddingDoc(true);
-                    setDocMode('upload');
-                  }}
-                  className="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-orange-600 hover:bg-orange-500 text-white transition-colors flex items-center gap-1.5 shadow-sm"
-                >
-                  <Upload className="w-3.5 h-3.5" />
-                  <span>Upload Document</span>
-                </button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setManualSearchQuery(`${equipment.brand} ${equipment.modelNumber || equipment.name} user manual pdf`);
+                      setManualLinkTitle(`${equipment.brand} ${equipment.modelNumber || equipment.name} Owner's Manual`);
+                      setIsFindManualOpen(true);
+                    }}
+                    className="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-orange-50 dark:bg-orange-950/40 hover:bg-orange-100 dark:hover:bg-orange-900/60 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-800 transition-colors flex items-center gap-1.5"
+                    title="Search Google for owner manuals and PDFs for this model"
+                  >
+                    <Search className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400" />
+                    <span>Find Manual Online</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setIsAddingDoc(true);
+                      setDocMode('upload');
+                    }}
+                    className="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-orange-600 hover:bg-orange-500 text-white transition-colors flex items-center gap-1.5 shadow-sm"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Upload Document</span>
+                  </button>
+                </div>
               </div>
 
               {/* Upload or Add Web Link Modal / Inline Form */}
@@ -1659,41 +2026,274 @@ export function EquipmentDetailModal({
                   </p>
                 </div>
 
-                <button
-                  onClick={handleSendWarrantyAlert}
-                  className="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 transition-colors flex items-center gap-1.5"
-                >
-                  <Send className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Push Warranty Info to Phone</span>
-                </button>
+                <div className="flex flex-wrap items-center gap-2">
+                  {!isEditingWarranty && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleStartEditWarranty}
+                        className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-orange-50 dark:bg-orange-950/40 hover:bg-orange-100 dark:hover:bg-orange-900/60 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-800 transition-colors flex items-center gap-1.5"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                        <span>Edit Warranty</span>
+                      </button>
+
+                      {equipment.warranty && equipment.warranty.type !== 'none' && (
+                        <button
+                          type="button"
+                          onClick={handleRemoveWarranty}
+                          className="px-3 py-1.5 text-xs font-semibold rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 transition-colors flex items-center gap-1.5"
+                          title="Remove all warranty details for this item"
+                        >
+                          <ShieldOff className="w-3.5 h-3.5" />
+                          <span>Remove Warranty</span>
+                        </button>
+                      )}
+                    </>
+                  )}
+
+                  <button
+                    onClick={handleSendWarrantyAlert}
+                    className="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 transition-colors flex items-center gap-1.5"
+                  >
+                    <Send className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Push Info to Phone</span>
+                  </button>
+                </div>
               </div>
 
-              {/* Status Banner */}
-              <div
-                className={`p-4 rounded-xl border flex items-center justify-between gap-4 ${
-                  warrantyMeta.status === 'lifetime'
-                    ? 'bg-emerald-50 text-emerald-900 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-200 dark:border-emerald-800'
-                    : warrantyMeta.status === 'expiring_soon'
-                    ? 'bg-amber-50 text-amber-900 border-amber-200 dark:bg-amber-950/40 dark:text-amber-200 dark:border-amber-800'
-                    : warrantyMeta.status === 'expired'
-                    ? 'bg-rose-50 text-rose-900 border-rose-200 dark:bg-rose-950/40 dark:text-rose-200 dark:border-rose-800'
-                    : 'bg-zinc-50 text-zinc-900 border-zinc-200 dark:bg-zinc-950/60 dark:text-zinc-200 dark:border-zinc-800'
-                }`}
-              >
-                <div>
-                  <span className="text-xs font-bold uppercase tracking-wider block opacity-75">
-                    Warranty Status
-                  </span>
-                  <p className="text-lg font-bold mt-0.5">{warrantyMeta.label}</p>
-                </div>
+              {/* Item Alerts & Notifications Management Card */}
+              <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2.5 rounded-xl shrink-0 ${isAlertsMuted ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-500' : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400'}`}>
+                      {isAlertsMuted ? <BellOff className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wider">
+                          Push Alerts &amp; Notifications for this Appliance
+                        </h4>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isAlertsMuted ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400' : 'bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200'}`}>
+                          {isAlertsMuted ? 'Muted' : 'Active'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                        {isAlertsMuted
+                          ? 'Alerts are disabled for this appliance. Pushover reminders for maintenance tasks and warranty expiration are silenced.'
+                          : 'Alerts are actively enabled. You will receive notifications when maintenance tasks and warranty expirations are due.'}
+                      </p>
+                    </div>
+                  </div>
 
-                <div className="text-right">
-                  <span className="text-xs opacity-75 block">Coverage Type</span>
-                  <span className="font-semibold capitalize text-sm">
-                    {equipment.warranty?.type || 'Manufacturer'} Warranty
-                  </span>
+                  <button
+                    type="button"
+                    onClick={handleToggleAlerts}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors flex items-center gap-1.5 shadow-xs ${
+                      isAlertsMuted
+                        ? 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-600'
+                        : 'bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border-zinc-300 dark:border-zinc-700'
+                    }`}
+                  >
+                    {isAlertsMuted ? (
+                      <>
+                        <Bell className="w-3.5 h-3.5" />
+                        <span>Enable Alerts</span>
+                      </>
+                    ) : (
+                      <>
+                        <BellOff className="w-3.5 h-3.5" />
+                        <span>Mute Alerts for this Item</span>
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
+
+              {/* Warranty Editing Form */}
+              {isEditingWarranty ? (
+                <div className="p-4 rounded-xl bg-orange-50/40 dark:bg-zinc-900 border border-orange-300 dark:border-orange-700/70 space-y-4">
+                  <div className="flex items-center justify-between border-b border-orange-200 dark:border-zinc-800 pb-2.5">
+                    <h4 className="text-xs font-bold text-orange-950 dark:text-orange-300 uppercase tracking-wider flex items-center gap-1.5">
+                      <Pencil className="w-3.5 h-3.5 text-orange-500" />
+                      Edit Warranty Information
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingWarranty(false)}
+                      className="text-xs font-medium text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                        Warranty Type
+                      </label>
+                      <select
+                        value={editWarrantyType}
+                        onChange={(e) => setEditWarrantyType(e.target.value as WarrantyType)}
+                        className="w-full px-3 py-1.5 text-xs rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
+                      >
+                        <option value="none">No Warranty / None</option>
+                        <option value="manufacturer">Manufacturer Warranty</option>
+                        <option value="extended">Extended Warranty</option>
+                        <option value="store">Store / Dealer Plan</option>
+                        <option value="lifetime">Lifetime Guarantee</option>
+                      </select>
+                    </div>
+
+                    {editWarrantyType !== 'none' && (
+                      <div className="flex items-center pt-6">
+                        <label className="relative flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={editHasLifetimeWarranty}
+                            onChange={(e) => setEditHasLifetimeWarranty(e.target.checked)}
+                            className="rounded border-zinc-300 text-orange-600 focus:ring-orange-500 w-4 h-4"
+                          />
+                          <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                            Lifetime Warranty (No expiration date)
+                          </span>
+                        </label>
+                      </div>
+                    )}
+
+                    {editWarrantyType !== 'none' && !editHasLifetimeWarranty && (
+                      <div>
+                        <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                          Expiration Date
+                        </label>
+                        <input
+                          type="date"
+                          value={editWarrantyExpiration}
+                          onChange={(e) => setEditWarrantyExpiration(e.target.value)}
+                          className="w-full px-3 py-1.5 text-xs rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
+                        />
+                      </div>
+                    )}
+
+                    {editWarrantyType !== 'none' && (
+                      <>
+                        <div>
+                          <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                            Provider / Company Name
+                          </label>
+                          <input
+                            type="text"
+                            value={editWarrantyProvider}
+                            onChange={(e) => setEditWarrantyProvider(e.target.value)}
+                            placeholder="e.g. Whirlpool Direct, Asurion, Home Depot"
+                            className="w-full px-3 py-1.5 text-xs rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                            Policy or Contract Number
+                          </label>
+                          <input
+                            type="text"
+                            value={editWarrantyPolicy}
+                            onChange={(e) => setEditWarrantyPolicy(e.target.value)}
+                            placeholder="e.g. POL-994827"
+                            className="w-full px-3 py-1.5 text-xs rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-mono"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                            Claims Phone or URL
+                          </label>
+                          <input
+                            type="text"
+                            value={editWarrantyContact}
+                            onChange={(e) => setEditWarrantyContact(e.target.value)}
+                            placeholder="e.g. 1-800-253-1301 or support.brand.com"
+                            className="w-full px-3 py-1.5 text-xs rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
+                          />
+                        </div>
+
+                        <div className="sm:col-span-2">
+                          <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                            Terms, Notes &amp; Deductible
+                          </label>
+                          <textarea
+                            value={editWarrantyNotes}
+                            onChange={(e) => setEditWarrantyNotes(e.target.value)}
+                            rows={2}
+                            placeholder="Covers parts & labor, excludes water damage..."
+                            className="w-full px-3 py-1.5 text-xs rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
+                          />
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-zinc-200 dark:border-zinc-800">
+                    <button
+                      type="button"
+                      onClick={handleRemoveWarranty}
+                      className="px-3 py-1.5 text-xs font-semibold rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors flex items-center gap-1"
+                    >
+                      <ShieldOff className="w-3.5 h-3.5" />
+                      <span>Remove Warranty Information</span>
+                    </button>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingWarranty(false)}
+                        className="px-3 py-1.5 text-xs font-semibold rounded-lg text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSaveWarranty}
+                        className="px-4 py-1.5 text-xs font-semibold rounded-lg bg-orange-600 hover:bg-orange-500 text-white shadow-xs"
+                      >
+                        Save Warranty Details
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Status Banner */}
+                  <div
+                    className={`p-4 rounded-xl border flex items-center justify-between gap-4 ${
+                      equipment.warranty?.type === 'none'
+                        ? 'bg-zinc-50 text-zinc-700 border-zinc-200 dark:bg-zinc-950/60 dark:text-zinc-300 dark:border-zinc-800'
+                        : warrantyMeta.status === 'lifetime'
+                        ? 'bg-emerald-50 text-emerald-900 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-200 dark:border-emerald-800'
+                        : warrantyMeta.status === 'expiring_soon'
+                        ? 'bg-amber-50 text-amber-900 border-amber-200 dark:bg-amber-950/40 dark:text-amber-200 dark:border-amber-800'
+                        : warrantyMeta.status === 'expired'
+                        ? 'bg-rose-50 text-rose-900 border-rose-200 dark:bg-rose-950/40 dark:text-rose-200 dark:border-rose-800'
+                        : 'bg-zinc-50 text-zinc-900 border-zinc-200 dark:bg-zinc-950/60 dark:text-zinc-200 dark:border-zinc-800'
+                    }`}
+                  >
+                    <div>
+                      <span className="text-xs font-bold uppercase tracking-wider block opacity-75">
+                        Warranty Status
+                      </span>
+                      <p className="text-lg font-bold mt-0.5">
+                        {equipment.warranty?.type === 'none' ? 'No Active Warranty' : warrantyMeta.label}
+                      </p>
+                    </div>
+
+                    <div className="text-right">
+                      <span className="text-xs opacity-75 block">Coverage Type</span>
+                      <span className="font-semibold capitalize text-sm">
+                        {equipment.warranty?.type === 'none'
+                          ? 'None'
+                          : `${equipment.warranty?.type || 'Manufacturer'} Warranty`}
+                      </span>
+                    </div>
+                  </div>
 
               {/* Detail Fields */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
@@ -1769,10 +2369,160 @@ export function EquipmentDetailModal({
                   </p>
                 </div>
               )}
+                </>
+              )}
             </div>
           )}
         </div>
       </div>
+
+      {/* Find Manual Online Modal */}
+      {isFindManualOpen && (
+        <div className="fixed inset-0 z-60 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl max-w-xl w-full border border-zinc-200 dark:border-zinc-800 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="p-5 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/40 dark:to-zinc-900">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-orange-500 text-white flex items-center justify-center shadow-xs">
+                  <Search className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-zinc-900 dark:text-white">
+                    Find Owner's Manual Online
+                  </h3>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                    {equipment.brand} • {equipment.modelNumber || equipment.name}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsFindManualOpen(false)}
+                className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 rounded-lg hover:bg-white/50 dark:hover:bg-zinc-800"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-5">
+              {/* Search Query Preview & Copy */}
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider">
+                  Target Search Query
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={manualSearchQuery}
+                    onChange={(e) => setManualSearchQuery(e.target.value)}
+                    className="flex-1 px-3 py-2 text-xs rounded-lg border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-mono focus:ring-1 focus:ring-orange-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleCopyManualQuery}
+                    className="px-3 py-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0"
+                    title="Copy query to clipboard"
+                  >
+                    {copiedManualSearch ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedManualSearch ? 'Copied' : 'Copy'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Instant Google Search Launcher */}
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider">
+                  Instant Google Search
+                </label>
+                <a
+                  href={`https://www.google.com/search?q=${encodeURIComponent(manualSearchQuery)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/60 hover:border-orange-500 hover:bg-orange-50/30 dark:hover:bg-orange-950/20 transition-all flex items-center justify-between group shadow-xs"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-950/70 text-orange-600 dark:text-orange-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                      <Globe className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                        <span>Search Google for Manuals &amp; PDFs</span>
+                        <ExternalLink className="w-3.5 h-3.5 text-zinc-400 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors" />
+                      </div>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                        Opens Google Search in a new tab with your exact model and PDF search query
+                      </p>
+                    </div>
+                  </div>
+
+                  <span className="px-3.5 py-1.5 rounded-lg bg-orange-600 text-white text-xs font-semibold group-hover:bg-orange-500 transition-colors flex items-center gap-1 shrink-0">
+                    <span>Search Google</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </span>
+                </a>
+              </div>
+
+              {/* Save Found Manual Link */}
+              <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-950/80 border border-zinc-200 dark:border-zinc-800 space-y-3">
+                <h4 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wider flex items-center gap-1.5">
+                  <LinkIcon className="w-3.5 h-3.5 text-orange-500" />
+                  Save Found Online Manual to this Appliance
+                </h4>
+                <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                  Once you find the manual or PDF URL, paste it below to link it permanently to this appliance for fast 1-click access.
+                </p>
+
+                <div className="space-y-2">
+                  <div>
+                    <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                      Manual Document Title
+                    </label>
+                    <input
+                      type="text"
+                      value={manualLinkTitle}
+                      onChange={(e) => setManualLinkTitle(e.target.value)}
+                      placeholder="e.g. Whirlpool Refrigerator User Guide & Wiring PDF"
+                      className="w-full px-3 py-1.5 text-xs rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                      Online Manual URL (PDF or Web Link)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="url"
+                        value={manualLinkUrl}
+                        onChange={(e) => setManualLinkUrl(e.target.value)}
+                        placeholder="https://... /manual.pdf"
+                        className="flex-1 px-3 py-1.5 text-xs rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleSaveManualLink}
+                        disabled={!manualLinkUrl.trim()}
+                        className="px-4 py-1.5 text-xs font-semibold rounded-lg bg-orange-600 hover:bg-orange-500 disabled:opacity-50 text-white transition-colors flex items-center gap-1.5 shadow-xs shrink-0"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Save Link</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setIsFindManualOpen(false)}
+                className="px-4 py-2 text-xs font-semibold rounded-lg bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -13,7 +13,8 @@ import {
   Tag,
   QrCode,
   UserCheck,
-  Phone
+  Phone,
+  BellOff
 } from 'lucide-react';
 import { Equipment } from '../types';
 import { CATEGORIES } from '../utils/categories';
@@ -73,13 +74,24 @@ export function EquipmentCard({ equipment, onSelect, onLogService, onEdit, onOpe
             {categoryMeta.label}
           </span>
 
-          <span
-            className={`text-[11px] font-medium px-2 py-0.5 rounded-full flex items-center gap-1 ${warrantyMeta.badgeClass}`}
-            title={`Warranty: ${equipment.warranty?.type || 'Standard'} • ${equipment.warranty?.expirationDate || 'N/A'}`}
-          >
-            <ShieldCheck className="w-3 h-3" />
-            <span>{warrantyMeta.label}</span>
-          </span>
+          <div className="flex items-center gap-1.5">
+            {(equipment.disableAlerts || equipment.warranty?.disableAlerts) && (
+              <span
+                className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700 flex items-center gap-1"
+                title="Alerts are muted for this item"
+              >
+                <BellOff className="w-2.5 h-2.5" />
+                <span>Muted</span>
+              </span>
+            )}
+            <span
+              className={`text-[11px] font-medium px-2 py-0.5 rounded-full flex items-center gap-1 ${warrantyMeta.badgeClass}`}
+              title={`Warranty: ${equipment.warranty?.type || 'Standard'} • ${equipment.warranty?.expirationDate || 'N/A'}`}
+            >
+              <ShieldCheck className="w-3 h-3" />
+              <span>{warrantyMeta.label}</span>
+            </span>
+          </div>
         </div>
 
         {/* Name and Brand */}

@@ -18,6 +18,7 @@ export type EquipmentStatus =
   | 'retired';
 
 export type WarrantyType =
+  | 'none'
   | 'manufacturer'
   | 'extended'
   | 'store'
@@ -111,6 +112,7 @@ export interface Equipment {
     contactPhoneOrUrl?: string;
     notes?: string;
     hasLifetimeWarranty?: boolean;
+    disableAlerts?: boolean;
   };
   specifications?: {
     filterSize?: string;
@@ -120,6 +122,7 @@ export interface Equipment {
   };
   maintenanceTasks: MaintenanceTask[];
   documents: DocumentItem[];
+  disableAlerts?: boolean;
   notes?: string;
   imageUrl?: string;
   folderName?: string;

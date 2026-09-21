@@ -52,8 +52,8 @@ export function getDaysDifference(targetDateString?: string): number | null {
 export function getWarrantyStatus(
   warranty?: Equipment['warranty']
 ): { status: WarrantyStatus; daysRemaining: number | null; label: string; badgeClass: string } {
-  if (!warranty) {
-    return { status: 'none', daysRemaining: null, label: 'No Warranty', badgeClass: 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400' };
+  if (!warranty || warranty.type === 'none') {
+    return { status: 'none', daysRemaining: null, label: 'No Warranty', badgeClass: 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700/60' };
   }
 
   if (warranty.hasLifetimeWarranty || warranty.type === 'lifetime') {

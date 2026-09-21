@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Wrench, Shield, Sparkles, Plus, Trash2, Tv, Tractor, UserCheck, Phone, Building2 } from 'lucide-react';
+import { X, Wrench, Shield, Sparkles, Plus, Trash2, Tv, Tractor, UserCheck, Phone, Building2, Bell, BellOff, ShieldOff } from 'lucide-react';
 import { Equipment, EquipmentCategory, EquipmentSection, WarrantyType } from '../types';
 import { CATEGORIES, getEquipmentSection } from '../utils/categories';
 import { getTodayDateString, addDaysToDate } from '../utils/date';
@@ -146,6 +146,21 @@ export function EquipmentFormModal({
   const [warrantyContact, setWarrantyContact] = useState(equipmentToEdit?.warranty?.contactPhoneOrUrl || '');
   const [warrantyNotes, setWarrantyNotes] = useState(equipmentToEdit?.warranty?.notes || '');
 
+  // Alerts & Notifications
+  const [disableAlerts, setDisableAlerts] = useState<boolean>(
+    equipmentToEdit?.disableAlerts || equipmentToEdit?.warranty?.disableAlerts || false
+  );
+
+  const handleClearWarranty = () => {
+    setWarrantyType('none');
+    setHasLifetimeWarranty(false);
+    setWarrantyExpirationDate('');
+    setWarrantyProvider('');
+    setWarrantyPolicyNumber('');
+    setWarrantyContact('');
+    setWarrantyNotes('');
+  };
+
   // Contractor / Maintenance Technician & Contact Phone Number
   const [contractorName, setContractorName] = useState(
     equipmentToEdit?.contractor?.name || equipmentToEdit?.contractorName || ''
@@ -196,6 +211,7 @@ export function EquipmentFormModal({
       setWarrantyPolicyNumber(equipmentToEdit.warranty?.policyNumber || '');
       setWarrantyContact(equipmentToEdit.warranty?.contactPhoneOrUrl || '');
       setWarrantyNotes(equipmentToEdit.warranty?.notes || '');
+      setDisableAlerts(equipmentToEdit.disableAlerts || equipmentToEdit.warranty?.disableAlerts || false);
       setContractorName(equipmentToEdit.contractor?.name || equipmentToEdit.contractorName || '');
       setContractorPhone(equipmentToEdit.contractor?.phone || equipmentToEdit.contractorPhone || '');
       setContractorCompany(equipmentToEdit.contractor?.company || '');
@@ -255,14 +271,16 @@ export function EquipmentFormModal({
       },
       contractorName: contractorName.trim() || undefined,
       contractorPhone: contractorPhone.trim() || undefined,
+      disableAlerts,
       warranty: {
         type: hasLifetimeWarranty ? 'lifetime' : warrantyType,
-        expirationDate: hasLifetimeWarranty ? '' : warrantyExpirationDate,
-        provider: warrantyProvider.trim() || undefined,
-        policyNumber: warrantyPolicyNumber.trim() || undefined,
-        contactPhoneOrUrl: warrantyContact.trim() || undefined,
-        notes: warrantyNotes.trim() || undefined,
-        hasLifetimeWarranty,
+        expirationDate: hasLifetimeWarranty || warrantyType === 'none' ? '' : warrantyExpirationDate,
+        provider: warrantyType === 'none' ? undefined : (warrantyProvider.trim() || undefined),
+        policyNumber: warrantyType === 'none' ? undefined : (warrantyPolicyNumber.trim() || undefined),
+        contactPhoneOrUrl: warrantyType === 'none' ? undefined : (warrantyContact.trim() || undefined),
+        notes: warrantyType === 'none' ? undefined : (warrantyNotes.trim() || undefined),
+        hasLifetimeWarranty: warrantyType === 'none' ? false : hasLifetimeWarranty,
+        disableAlerts,
       },
       specifications: {
         filterSize: filterSize.trim() || undefined,
@@ -530,15 +548,33 @@ export function EquipmentFormModal({
 
           {/* Warranty Tracking */}
           <div className="space-y-3 pt-2 border-t border-zinc-200 dark:border-zinc-800">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                Warranty & Protection Plan
-              </h3>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <h3 className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                  Warranty & Protection Plan
+                </h3>
+                {warrantyType !== 'none' && (
+                  <button
+                    type="button"
+                    onClick={handleClearWarranty}
+                    className="text-[11px] font-semibold text-rose-600 dark:text-rose-400 hover:underline flex items-center gap-1"
+                    title="Remove all warranty details for this item"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    <span>Clear / Remove Warranty</span>
+                  </button>
+                )}
+              </div>
               <label className="flex items-center gap-2 cursor-pointer text-xs font-medium">
                 <input
                   type="checkbox"
                   checked={hasLifetimeWarranty}
-                  onChange={(e) => setHasLifetimeWarranty(e.target.checked)}
+                  onChange={(e) => {
+                    setHasLifetimeWarranty(e.target.checked);
+                    if (e.target.checked && warrantyType === 'none') {
+                      setWarrantyType('lifetime');
+                    }
+                  }}
                   className="rounded border-zinc-300 text-orange-600 focus:ring-orange-500"
                 />
                 <span>Lifetime Warranty (No Expiration)</span>
@@ -559,6 +595,7 @@ export function EquipmentFormModal({
                   <option value="store">Store Protection Plan</option>
                   <option value="limited">Limited Warranty</option>
                   <option value="lifetime">Lifetime</option>
+                  <option value="none">No Warranty / None</option>
                 </select>
               </div>
 
@@ -570,7 +607,7 @@ export function EquipmentFormModal({
                   type="date"
                   value={warrantyExpirationDate}
                   onChange={(e) => setWarrantyExpirationDate(e.target.value)}
-                  disabled={hasLifetimeWarranty}
+                  disabled={hasLifetimeWarranty || warrantyType === 'none'}
                   className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 disabled:opacity-50"
                 />
               </div>
@@ -581,8 +618,9 @@ export function EquipmentFormModal({
                   type="text"
                   value={warrantyProvider}
                   onChange={(e) => setWarrantyProvider(e.target.value)}
-                  placeholder="e.g. Carrier 10-Yr Plan"
-                  className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900"
+                  disabled={warrantyType === 'none'}
+                  placeholder={warrantyType === 'none' ? 'No warranty coverage' : 'e.g. Carrier 10-Yr Plan'}
+                  className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 disabled:opacity-50"
                 />
               </div>
 
@@ -592,8 +630,9 @@ export function EquipmentFormModal({
                   type="text"
                   value={warrantyPolicyNumber}
                   onChange={(e) => setWarrantyPolicyNumber(e.target.value)}
+                  disabled={warrantyType === 'none'}
                   placeholder="e.g. POL-8829104"
-                  className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 font-mono"
+                  className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 font-mono disabled:opacity-50"
                 />
               </div>
 
@@ -605,8 +644,9 @@ export function EquipmentFormModal({
                   type="text"
                   value={warrantyContact}
                   onChange={(e) => setWarrantyContact(e.target.value)}
+                  disabled={warrantyType === 'none'}
                   placeholder="e.g. 1-800-227-7437 or https://carrier.com/warranty"
-                  className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900"
+                  className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 disabled:opacity-50"
                 />
               </div>
 
@@ -617,11 +657,49 @@ export function EquipmentFormModal({
                 <textarea
                   value={warrantyNotes}
                   onChange={(e) => setWarrantyNotes(e.target.value)}
-                  placeholder="e.g. Covers parts and compressor only, labor excluded after year 1."
+                  disabled={warrantyType === 'none'}
+                  placeholder={warrantyType === 'none' ? 'No active warranty notes' : 'e.g. Covers parts and compressor only, labor excluded after year 1.'}
                   rows={2}
-                  className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900"
+                  className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 disabled:opacity-50"
                 />
               </div>
+            </div>
+
+            {/* Alerts & Notifications Preference for this Item */}
+            <div className="flex items-center justify-between p-3 rounded-lg bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800 mt-2">
+              <div className="flex items-center gap-2.5">
+                {disableAlerts ? (
+                  <div className="w-8 h-8 rounded-lg bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center text-zinc-500">
+                    <BellOff className="w-4 h-4" />
+                  </div>
+                ) : (
+                  <div className="w-8 h-8 rounded-lg bg-orange-100 dark:bg-orange-950/70 flex items-center justify-center text-orange-600 dark:text-orange-400">
+                    <Bell className="w-4 h-4" />
+                  </div>
+                )}
+                <div>
+                  <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                    Alerts &amp; Notifications for this Appliance
+                  </p>
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                    {disableAlerts
+                      ? 'Alerts are muted — will NOT trigger Pushover reminders or maintenance due alerts'
+                      : 'Alerts are active — sends Pushover alerts for due maintenance & warranty expiry'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDisableAlerts(!disableAlerts)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors flex items-center gap-1.5 shrink-0 ${
+                  disableAlerts
+                    ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700 hover:bg-zinc-300'
+                    : 'bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800 hover:bg-orange-100'
+                }`}
+              >
+                {disableAlerts ? <BellOff className="w-3.5 h-3.5" /> : <Bell className="w-3.5 h-3.5" />}
+                <span>{disableAlerts ? 'Alerts Muted' : 'Alerts Active'}</span>
+              </button>
             </div>
           </div>
 

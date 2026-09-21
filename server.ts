@@ -1778,6 +1778,11 @@ app.post('/api/pushover/check-and-notify', async (req: Request, res: Response) =
   const expiringWarranties: { equipmentName: string; daysLeft: number; expirationDate: string }[] = [];
 
   db.equipment.forEach((eq) => {
+    // Skip equipment if alerts are disabled for this item
+    if (eq.disableAlerts) {
+      return;
+    }
+
     // Check maintenance tasks
     eq.maintenanceTasks?.forEach((task: any) => {
       if (task.nextDueDate) {
@@ -1800,8 +1805,14 @@ app.post('/api/pushover/check-and-notify', async (req: Request, res: Response) =
       }
     });
 
-    // Check warranties
-    if (eq.warranty && !eq.warranty.hasLifetimeWarranty && eq.warranty.expirationDate) {
+    // Check warranties (skip if disabled or no warranty)
+    if (
+      eq.warranty &&
+      eq.warranty.type !== 'none' &&
+      !eq.warranty.disableAlerts &&
+      !eq.warranty.hasLifetimeWarranty &&
+      eq.warranty.expirationDate
+    ) {
       const expDate = new Date(eq.warranty.expirationDate);
       expDate.setHours(0, 0, 0, 0);
       const diffDays = Math.round((expDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
@@ -2003,6 +2014,146 @@ Return ONLY valid JSON matching this schema:
           priority: 'normal',
           instructions: 'Inspect for wear and clean dust or debris.',
         },
+      ],
+    });
+  }
+});
+
+// AI Assistant: Find Manual & Documentation Resources Online
+app.post('/api/ai/find-manuals', async (req: Request, res: Response) => {
+  const { brand, modelNumber, name, category } = req.body;
+  const apiKey = process.env.GEMINI_API_KEY;
+
+  const b = brand ? brand.trim() : '';
+  const m = modelNumber ? modelNumber.trim() : '';
+  const n = name ? name.trim() : 'Appliance';
+
+  const searchQuery = `${b} ${m} ${n} user manual owner guide pdf`.replace(/\s+/g, ' ').trim();
+  const directGoogleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`;
+  const manualslibSearchUrl = `https://www.manualslib.com/search.html?q=${encodeURIComponent(`${b} ${m}`.trim() || n)}`;
+
+  if (!apiKey) {
+    res.json({
+      success: true,
+      isAi: false,
+      searchQuery,
+      googleSearchUrl: directGoogleSearchUrl,
+      manualslibSearchUrl,
+      links: [
+        {
+          title: `Google Search: "${searchQuery}"`,
+          url: directGoogleSearchUrl,
+          source: 'Google Search',
+          description: 'Instant web search for PDF owner guides, installation manuals, and wiring diagrams.',
+        },
+        {
+          title: `ManualsLib Catalog Search: ${b} ${m || n}`,
+          url: manualslibSearchUrl,
+          source: 'ManualsLib Database',
+          description: 'Free searchable library with thousands of appliance and power equipment manuals.',
+        },
+      ],
+      tips: [
+        'Look for results ending in .pdf or hosted directly on the manufacturer portal.',
+        'Once downloaded, drag and drop the PDF into this equipment folder to keep it offline on your server.',
+      ],
+    });
+    return;
+  }
+
+  try {
+    const ai = new GoogleGenAI({ apiKey });
+    const prompt = `You are an expert appliance and equipment technical archivist.
+Equipment:
+Name: ${n}
+Brand: ${b || 'Unknown'}
+Model Number: ${m || 'Unknown'}
+Category: ${category || 'General'}
+
+Provide high-value guidance on where and how to find the official manufacturer PDF user manual, wiring schematics, and parts lists.
+If known for this brand/model, provide realistic direct official support portal URLs (e.g. carrier.com/residential/en/us/technical-support, geappliances.com/ge/service-and-support/manuals.htm, rheem.com/support/product-literature, toro.com/en/parts).
+
+Return ONLY valid JSON matching this schema:
+{
+  "recommendedPortals": [
+    {
+      "title": "Portal or document name",
+      "url": "https://example.com/support",
+      "source": "Manufacturer / Database name",
+      "description": "Short explanation of what will be found here"
+    }
+  ],
+  "exactSearchTerms": [
+    "search query 1",
+    "search query 2"
+  ],
+  "modelDecodingTips": "Short advice on where the model sticker is located or how to decode revision letters."
+}`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+      config: {
+        responseMimeType: 'application/json',
+      },
+    });
+
+    const parsed = JSON.parse(response.text?.trim() || '{}');
+    const links = [
+      {
+        title: `Google Search: "${searchQuery}"`,
+        url: directGoogleSearchUrl,
+        source: 'Google PDF Search',
+        description: 'Instant Google search targeted for downloadable manufacturer PDF manuals.',
+      },
+      {
+        title: `ManualsLib: ${b} ${m || n}`,
+        url: manualslibSearchUrl,
+        source: 'ManualsLib',
+        description: 'Search repository of over 5 million free user manuals and parts catalogs.',
+      },
+      ...(Array.isArray(parsed.recommendedPortals) ? parsed.recommendedPortals : []),
+    ];
+
+    res.json({
+      success: true,
+      isAi: true,
+      searchQuery,
+      googleSearchUrl: directGoogleSearchUrl,
+      manualslibSearchUrl,
+      links,
+      exactSearchTerms: parsed.exactSearchTerms || [searchQuery],
+      modelDecodingTips: parsed.modelDecodingTips || '',
+      tips: [
+        'Download the official PDF to your computer or phone.',
+        'Drag and drop the file directly into EquipKeep to archive it permanently on your server array.',
+      ],
+    });
+  } catch (err: any) {
+    console.error('AI Find Manuals error:', err);
+    res.json({
+      success: true,
+      isAi: false,
+      searchQuery,
+      googleSearchUrl: directGoogleSearchUrl,
+      manualslibSearchUrl,
+      links: [
+        {
+          title: `Google Search: "${searchQuery}"`,
+          url: directGoogleSearchUrl,
+          source: 'Google Search',
+          description: 'Instant web search for PDF owner guides, installation manuals, and wiring diagrams.',
+        },
+        {
+          title: `ManualsLib: ${b} ${m || n}`,
+          url: manualslibSearchUrl,
+          source: 'ManualsLib Database',
+          description: 'Free searchable library with thousands of appliance and power equipment manuals.',
+        },
+      ],
+      tips: [
+        'Look for results ending in .pdf or hosted directly on the manufacturer portal.',
+        'Once downloaded, drag and drop the PDF into this equipment folder to keep it offline on your server.',
       ],
     });
   }
