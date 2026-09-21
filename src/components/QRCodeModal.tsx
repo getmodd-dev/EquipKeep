@@ -14,11 +14,19 @@ import {
   Layers,
   Sparkles,
   Settings2,
-  HardDrive
+  HardDrive,
+  Image as ImageIcon,
+  Loader2,
+  FileCheck2
 } from 'lucide-react';
 import { Equipment } from '../types';
 import { CATEGORIES } from '../utils/categories';
 import { formatDate } from '../utils/date';
+import {
+  LabelSize,
+  downloadLabelAsPng,
+  renderLabelToCanvas,
+} from '../utils/labelGenerator';
 
 interface QRCodeModalProps {
   isOpen: boolean;
@@ -27,8 +35,6 @@ interface QRCodeModalProps {
   allEquipment?: Equipment[];
   onSelectEquipment?: (eq: Equipment) => void;
 }
-
-type LabelSize = 'standard' | 'compact' | 'badge';
 
 export function QRCodeModal({
   isOpen,
@@ -41,7 +47,7 @@ export function QRCodeModal({
   );
   const [isBatchMode, setIsBatchMode] = useState(false);
   const [batchSelectedIds, setBatchSelectedIds] = useState<string[]>([]);
-  const [labelSize, setLabelSize] = useState<LabelSize>('standard');
+  const [labelSize, setLabelSize] = useState<LabelSize>('thermal_50x30');
   const [copiedUrl, setCopiedUrl] = useState(false);
 
   // Custom host URL settings (homelab local IP vs cloud URL)
@@ -55,6 +61,11 @@ export function QRCodeModal({
   const [showSerial, setShowSerial] = useState(true);
   const [showNextDue, setShowNextDue] = useState(true);
   const [showLocation, setShowLocation] = useState(true);
+  const [includeBorder, setIncludeBorder] = useState(true);
+
+  // Image rendering & download state
+  const [isDownloadingImage, setIsDownloadingImage] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState('');
 
   // Cache of QR data URLs for rendering
   const [qrCodeDataUrls, setQrCodeDataUrls] = useState<Record<string, string>>({});
@@ -162,6 +173,58 @@ export function QRCodeModal({
     window.print();
   };
 
+  // Download complete label as a high-resolution PNG image (rendered via HTML5 canvas)
+  const handleDownloadLabelImage = async (eq: Equipment, targetSize: LabelSize = labelSize) => {
+    const qrDataUrl = qrCodeDataUrls[eq.id];
+    if (!qrDataUrl) return;
+
+    try {
+      setIsDownloadingImage(true);
+      await downloadLabelAsPng(eq, qrDataUrl, targetSize, {
+        showFilterSpecs,
+        showSerial,
+        showLocation,
+        showNextDue,
+        includeBorder,
+      });
+    } catch (err) {
+      console.error('Failed to export label image:', err);
+    } finally {
+      setIsDownloadingImage(false);
+    }
+  };
+
+  // Batch download: exports all selected labels as PNG images sequentially
+  const handleDownloadBatchImages = async (targetSize: LabelSize = labelSize) => {
+    const selectedItems = allEquipment.filter((e) => batchSelectedIds.includes(e.id));
+    if (selectedItems.length === 0) return;
+
+    try {
+      setIsDownloadingImage(true);
+      for (let i = 0; i < selectedItems.length; i++) {
+        const eq = selectedItems[i];
+        const qrDataUrl = qrCodeDataUrls[eq.id];
+        if (qrDataUrl) {
+          setDownloadProgress(`Exporting ${i + 1}/${selectedItems.length}: ${eq.name}...`);
+          await downloadLabelAsPng(eq, qrDataUrl, targetSize, {
+            showFilterSpecs,
+            showSerial,
+            showLocation,
+            showNextDue,
+            includeBorder,
+          });
+          // Small delay so the browser cleanly manages sequential downloads
+          await new Promise((resolve) => setTimeout(resolve, 350));
+        }
+      }
+    } catch (err) {
+      console.error('Batch download failed:', err);
+    } finally {
+      setIsDownloadingImage(false);
+      setDownloadProgress('');
+    }
+  };
+
   const handleDownloadSingleQr = (eq: Equipment) => {
     const dataUrl = qrCodeDataUrls[eq.id];
     if (!dataUrl) return;
@@ -169,7 +232,7 @@ export function QRCodeModal({
     const safeName = (eq.brand ? `${eq.brand}_` : '') + eq.name.replace(/[^a-zA-Z0-9]/g, '_');
     const a = document.createElement('a');
     a.href = dataUrl;
-    a.download = `EquipKeep_QR_${safeName}.png`;
+    a.download = `EquipKeep_Raw_QR_${safeName}.png`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -194,6 +257,75 @@ export function QRCodeModal({
     const qrSrc = qrCodeDataUrls[eq.id];
     const category = CATEGORIES[eq.category] || CATEGORIES.other;
     const nextTask = eq.maintenanceTasks?.[0];
+
+    if (size === 'thermal_50x30') {
+      // 50mm x 30mm (approx 1.97" x 1.18") Thermal Roll Label (aspect ratio 5:3)
+      // Optimized for thermal label printers (Phomemo, Niimbot, Brother, Munbyn, Dymo)
+      return (
+        <div
+          key={eq.id}
+          className={`print-label-card print-label-thermal bg-white text-zinc-950 ${
+            includeBorder ? 'border-2 border-zinc-950' : 'border border-dashed border-zinc-300'
+          } rounded-lg p-2 flex items-center gap-2.5 w-full max-w-[340px] aspect-[5/3] shadow-xs select-none relative overflow-hidden`}
+        >
+          {/* Subtle size tag */}
+          <div className="absolute top-1 right-1.5 text-[8px] font-mono font-bold uppercase tracking-wider text-zinc-400">
+            50×30mm
+          </div>
+
+          {/* Left: High-Contrast QR Code */}
+          <div className="shrink-0 flex flex-col items-center justify-center w-[96px]">
+            <div className="w-[84px] h-[84px] bg-white flex items-center justify-center p-0.5">
+              {qrSrc ? (
+                <img src={qrSrc} alt={`QR for ${eq.name}`} className="w-full h-full object-contain" />
+              ) : (
+                <div className="w-full h-full bg-zinc-100 flex items-center justify-center text-[8px] text-zinc-400">
+                  Loading...
+                </div>
+              )}
+            </div>
+            <span className="text-[7px] font-black font-mono uppercase tracking-tight text-zinc-900 mt-0.5">
+              Scan for info
+            </span>
+          </div>
+
+          {/* Dotted vertical line */}
+          <div className="h-[85%] border-r border-dashed border-zinc-400 my-auto" />
+
+          {/* Right: Appliance Information */}
+          <div className="min-w-0 flex-1 flex flex-col justify-between h-[92%] py-0.5">
+            <div>
+              <span className="text-[7.5px] font-black uppercase px-1.5 py-0.5 rounded bg-zinc-950 text-white truncate inline-block max-w-[130px]">
+                {(eq.brand || 'APPLIANCE').toUpperCase()}
+              </span>
+              <h4 className="text-[11px] font-black text-zinc-950 leading-tight line-clamp-2 mt-0.5">
+                {eq.name}
+              </h4>
+            </div>
+
+            <div className="space-y-0.5 text-[9px] font-mono leading-tight">
+              {eq.modelNumber && (
+                <div className="font-bold text-zinc-900 truncate">MOD: {eq.modelNumber}</div>
+              )}
+              {showSerial && eq.serialNumber && (
+                <div className="text-zinc-700 truncate">SN: {eq.serialNumber}</div>
+              )}
+              {showFilterSpecs && eq.specifications?.filterSize ? (
+                <div className="font-bold text-zinc-950 border border-zinc-950 px-1 rounded-[2px] truncate text-[8px]">
+                  FLTR: {eq.specifications.filterSize}
+                </div>
+              ) : showLocation && eq.locationRoom ? (
+                <div className="text-zinc-700 truncate text-[8px]">📍 {eq.locationRoom}</div>
+              ) : null}
+            </div>
+
+            <div className="text-[7.5px] font-mono text-zinc-500 truncate">
+              ID: {eq.id}
+            </div>
+          </div>
+        </div>
+      );
+    }
 
     if (size === 'compact') {
       // 2" x 1.5" Mini Sticker
@@ -382,7 +514,7 @@ export function QRCodeModal({
             top: 0;
             width: 100%;
             margin: 0;
-            padding: 10mm;
+            padding: ${labelSize === 'thermal_50x30' ? '0' : '10mm'};
             background: white !important;
             color: black !important;
           }
@@ -392,9 +524,29 @@ export function QRCodeModal({
             break-inside: avoid;
             border-color: #000 !important;
           }
-          @page {
-            size: auto;
-            margin: 10mm;
+          ${
+            labelSize === 'thermal_50x30'
+              ? `
+            @page {
+              size: 50mm 30mm;
+              margin: 0;
+            }
+            .print-label-thermal {
+              width: 48mm !important;
+              height: 28mm !important;
+              max-width: 48mm !important;
+              max-height: 28mm !important;
+              margin: 1mm auto !important;
+              border-width: ${includeBorder ? '1.5px' : '0px'} !important;
+              padding: 1.5mm !important;
+            }
+          `
+              : `
+            @page {
+              size: auto;
+              margin: 10mm;
+            }
+          `
           }
         }
       `}</style>
@@ -604,17 +756,40 @@ export function QRCodeModal({
             {/* Label Layout & Options Toolbar */}
             <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-zinc-50/50 dark:bg-zinc-950/40 border border-zinc-200 dark:border-zinc-800 text-xs">
               {/* Size Selector */}
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider text-[11px]">
-                  Tag Size:
+                  Label Preset:
                 </span>
-                <div className="flex items-center gap-1 bg-white dark:bg-zinc-900 p-0.5 rounded-lg border border-zinc-300 dark:border-zinc-700">
+                <div className="flex flex-wrap items-center gap-1 bg-white dark:bg-zinc-900 p-0.5 rounded-lg border border-zinc-300 dark:border-zinc-700">
+                  <button
+                    type="button"
+                    onClick={() => setLabelSize('thermal_50x30')}
+                    className={`px-2.5 py-1 rounded text-[11px] font-semibold flex items-center gap-1 transition-colors ${
+                      labelSize === 'thermal_50x30'
+                        ? 'bg-orange-600 text-white shadow-xs'
+                        : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                    <span>50mm × 30mm (Thermal Roll)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLabelSize('standard')}
+                    className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-colors ${
+                      labelSize === 'standard'
+                        ? 'bg-orange-600 text-white shadow-xs'
+                        : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                    }`}
+                  >
+                    Standard Tag (3.5"×2")
+                  </button>
                   <button
                     type="button"
                     onClick={() => setLabelSize('compact')}
                     className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-colors ${
                       labelSize === 'compact'
-                        ? 'bg-orange-600 text-white'
+                        ? 'bg-orange-600 text-white shadow-xs'
                         : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
                     }`}
                   >
@@ -622,21 +797,10 @@ export function QRCodeModal({
                   </button>
                   <button
                     type="button"
-                    onClick={() => setLabelSize('standard')}
-                    className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-colors ${
-                      labelSize === 'standard'
-                        ? 'bg-orange-600 text-white'
-                        : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
-                    }`}
-                  >
-                    Standard Asset Tag (3.5"×2")
-                  </button>
-                  <button
-                    type="button"
                     onClick={() => setLabelSize('badge')}
                     className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-colors ${
                       labelSize === 'badge'
-                        ? 'bg-orange-600 text-white'
+                        ? 'bg-orange-600 text-white shadow-xs'
                         : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
                     }`}
                   >
@@ -647,6 +811,15 @@ export function QRCodeModal({
 
               {/* Detail Toggles */}
               <div className="flex flex-wrap items-center gap-3 text-[11px] text-zinc-600 dark:text-zinc-400">
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={includeBorder}
+                    onChange={(e) => setIncludeBorder(e.target.checked)}
+                    className="rounded border-zinc-300 text-orange-600"
+                  />
+                  <span>Box Border</span>
+                </label>
                 <label className="flex items-center gap-1.5 cursor-pointer">
                   <input
                     type="checkbox"
@@ -702,12 +875,15 @@ export function QRCodeModal({
 
                 {/* Single Label Preview Canvas */}
                 <div className="p-6 bg-zinc-100 dark:bg-zinc-950/80 rounded-2xl border border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center space-y-4">
-                  <div className="text-[11px] font-semibold text-zinc-400 uppercase tracking-widest">
-                    Live Printable Preview ({labelSize} Tag)
+                  <div className="flex items-center gap-2 text-[11px] font-semibold text-zinc-400 uppercase tracking-widest">
+                    <span>Live Printable Preview</span>
+                    <span className="text-orange-500 font-bold">
+                      ({labelSize === 'thermal_50x30' ? '50mm × 30mm Thermal Roll' : `${labelSize} Tag`})
+                    </span>
                   </div>
 
                   {currentEquipment ? (
-                    <div id="printable-qr-sheet" className="p-2">
+                    <div id="printable-qr-sheet" className="p-2 flex justify-center items-center">
                       {renderLabelCard(currentEquipment)}
                     </div>
                   ) : (
@@ -716,33 +892,85 @@ export function QRCodeModal({
 
                   {/* Actions for this single unit */}
                   {currentEquipment && (
-                    <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
-                      <button
-                        type="button"
-                        onClick={handlePrint}
-                        className="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-orange-600 hover:bg-orange-500 text-white flex items-center gap-1.5 shadow-sm transition-colors"
-                      >
-                        <Printer className="w-3.5 h-3.5" />
-                        <span>Print Physical Sticker</span>
-                      </button>
+                    <div className="flex flex-col items-center gap-2.5 w-full pt-2">
+                      <div className="flex flex-wrap items-center justify-center gap-2">
+                        {/* Primary: Download Complete Label as High-Res PNG Image */}
+                        <button
+                          type="button"
+                          disabled={isDownloadingImage}
+                          onClick={() => handleDownloadLabelImage(currentEquipment, labelSize)}
+                          className="px-4 py-2 text-xs font-bold rounded-lg bg-orange-600 hover:bg-orange-500 text-white flex items-center gap-2 shadow-sm transition-colors disabled:opacity-50"
+                        >
+                          {isDownloadingImage ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <ImageIcon className="w-3.5 h-3.5" />
+                          )}
+                          <span>
+                            {labelSize === 'thermal_50x30'
+                              ? 'Download 50×30mm Label (PNG)'
+                              : `Download Label Image (${labelSize})`}
+                          </span>
+                        </button>
 
-                      <button
-                        type="button"
-                        onClick={() => handleDownloadSingleQr(currentEquipment)}
-                        className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5 transition-colors"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        <span>Download QR PNG (Label Maker)</span>
-                      </button>
+                        {/* Quick 50x30mm button if not already on thermal size */}
+                        {labelSize !== 'thermal_50x30' && (
+                          <button
+                            type="button"
+                            disabled={isDownloadingImage}
+                            onClick={() => handleDownloadLabelImage(currentEquipment, 'thermal_50x30')}
+                            className="px-3.5 py-2 text-xs font-semibold rounded-lg bg-amber-100 dark:bg-amber-950/60 hover:bg-amber-200 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-800 flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                          >
+                            <ImageIcon className="w-3.5 h-3.5" />
+                            <span>Download 50×30mm Thermal (PNG)</span>
+                          </button>
+                        )}
 
-                      <button
-                        type="button"
-                        onClick={handleCopyLink}
-                        className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5 transition-colors"
-                      >
-                        {copiedUrl ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                        <span>{copiedUrl ? 'Link Copied' : 'Copy Scannable URL'}</span>
-                      </button>
+                        {/* Print Button */}
+                        <button
+                          type="button"
+                          onClick={handlePrint}
+                          className="px-3.5 py-2 text-xs font-semibold rounded-lg bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5 transition-colors"
+                        >
+                          <Printer className="w-3.5 h-3.5" />
+                          <span>Print Sticker</span>
+                        </button>
+
+                        {/* Raw QR Download Button */}
+                        <button
+                          type="button"
+                          onClick={() => handleDownloadSingleQr(currentEquipment)}
+                          className="px-3.5 py-2 text-xs font-semibold rounded-lg bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5 transition-colors"
+                          title="Download only the square QR code bitmap"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          <span>Raw QR Only</span>
+                        </button>
+
+                        {/* Copy Link Button */}
+                        <button
+                          type="button"
+                          onClick={handleCopyLink}
+                          className="px-3.5 py-2 text-xs font-semibold rounded-lg bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5 transition-colors"
+                        >
+                          {copiedUrl ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                          <span>{copiedUrl ? 'Link Copied' : 'Copy URL'}</span>
+                        </button>
+                      </div>
+
+                      {/* 50x30mm Thermal Printing Instructions Callout */}
+                      <div className="w-full max-w-xl p-2.5 rounded-xl bg-white/70 dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800 text-[11px] text-zinc-600 dark:text-zinc-400 flex items-start gap-2.5 shadow-2xs">
+                        <div className="shrink-0 text-orange-500 mt-0.5">
+                          <Tag className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="space-y-0.5 leading-relaxed">
+                          <span className="font-bold text-zinc-900 dark:text-zinc-100">
+                            50mm × 30mm Thermal Label Printing:
+                          </span>{' '}
+                          The downloaded PNG is generated at a native 5:3 aspect ratio (600×360 px at 300 DPI) with crisp monochrome contrast.
+                          Open it in your label printer's mobile or desktop app (Phomemo, Niimbot, Brother iPrint&Label, MUNBYN, Dymo, Zebra) and select 50×30mm roll paper for direct borderless printing.
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -754,7 +982,7 @@ export function QRCodeModal({
               <div className="space-y-4">
                 {/* Batch Checklist Toolbar */}
                 <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-xs">
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-3">
                     <button
                       type="button"
                       onClick={handleSelectAllBatch}
@@ -763,12 +991,33 @@ export function QRCodeModal({
                       {batchSelectedIds.length === allEquipment.length ? 'Deselect All' : 'Select All'}
                     </button>
                     <span className="text-zinc-500">
-                      {batchSelectedIds.length} of {allEquipment.length} equipment selected for sheet
+                      {batchSelectedIds.length} of {allEquipment.length} equipment selected
                     </span>
+
+                    {/* Batch PNG Download Button */}
+                    <button
+                      type="button"
+                      disabled={isDownloadingImage || batchSelectedIds.length === 0}
+                      onClick={() => handleDownloadBatchImages(labelSize)}
+                      className="px-3 py-1 rounded-lg bg-orange-600 hover:bg-orange-500 text-white font-bold flex items-center gap-1.5 shadow-xs disabled:opacity-50 transition-colors text-[11px]"
+                    >
+                      {isDownloadingImage ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <ImageIcon className="w-3.5 h-3.5" />
+                      )}
+                      <span>
+                        {isDownloadingImage
+                          ? downloadProgress || 'Exporting Labels...'
+                          : labelSize === 'thermal_50x30'
+                          ? `Download All (${batchSelectedIds.length}) as 50×30mm PNGs`
+                          : `Download All (${batchSelectedIds.length}) as Images`}
+                      </span>
+                    </button>
                   </div>
 
                   <div className="text-[11px] text-zinc-400">
-                    Prints on standard 8.5"×11" paper or sticker sheets with dotted cut guides
+                    Prints on 50×30mm thermal rolls or standard 8.5"×11" sticker sheets
                   </div>
                 </div>
 
