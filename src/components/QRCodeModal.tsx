@@ -552,12 +552,12 @@ export function QRCodeModal({
       `}</style>
 
       {/* Screen Modal Overlay */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/65 backdrop-blur-sm overflow-y-auto">
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden my-auto animate-in zoom-in-95 duration-150">
+      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-5 bg-black/70 backdrop-blur-xs overflow-y-auto">
+        <div className="bg-white dark:bg-zinc-900 border-t sm:border border-zinc-200 dark:border-zinc-800 rounded-t-2xl sm:rounded-2xl w-full max-w-4xl h-[100dvh] sm:h-auto sm:max-h-[92vh] flex flex-col shadow-2xl overflow-hidden my-0 sm:my-auto animate-in slide-in-from-bottom-3 sm:zoom-in-95 duration-150">
           {/* Header */}
-          <div className="p-5 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50 dark:bg-zinc-950/60">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-orange-100 dark:bg-orange-950/60 flex items-center justify-center text-orange-600 dark:text-orange-400">
+          <div className="p-4 sm:p-5 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50 dark:bg-zinc-950/60 shrink-0">
+            <div className="flex items-center gap-2.5 sm:gap-3">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-orange-100 dark:bg-orange-950/60 flex items-center justify-center text-orange-600 dark:text-orange-400 shrink-0">
                 <Tag className="w-5 h-5" />
               </div>
               <div>
@@ -1065,24 +1065,24 @@ export function QRCodeModal({
           </div>
 
           {/* Footer Actions */}
-          <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50 dark:bg-zinc-950/60">
-            <div className="flex items-center gap-1.5 text-xs text-zinc-500">
+          <div className="p-3.5 sm:p-4 border-t border-zinc-200 dark:border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-3 bg-zinc-50 dark:bg-zinc-950/80 pb-safe shrink-0">
+            <div className="hidden sm:flex items-center gap-1.5 text-xs text-zinc-500">
               <Sparkles className="w-3.5 h-3.5 text-orange-500" />
               <span>Scanning with iOS or Android camera will immediately open that unit's maintenance record.</span>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-end gap-2 w-full sm:w-auto">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-xs font-semibold text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
+                className="flex-1 sm:flex-none px-4 py-2.5 sm:py-2 text-xs font-semibold text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white rounded-lg border border-zinc-200 dark:border-zinc-800 sm:border-transparent text-center"
               >
                 Close
               </button>
               <button
                 type="button"
                 onClick={handlePrint}
-                className="px-4 py-2 text-xs font-semibold rounded-lg bg-orange-600 hover:bg-orange-500 text-white flex items-center gap-1.5 shadow-sm transition-colors"
+                className="flex-1 sm:flex-none px-4 py-2.5 sm:py-2 text-xs font-semibold rounded-lg bg-orange-600 hover:bg-orange-500 text-white flex items-center justify-center gap-1.5 shadow-sm transition-colors"
               >
                 <Printer className="w-3.5 h-3.5" />
                 <span>Print Labels</span>

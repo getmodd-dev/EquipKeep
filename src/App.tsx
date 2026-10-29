@@ -16,6 +16,8 @@ import {
   Tv,
   Tractor,
   ClipboardList,
+  Camera,
+  X,
 } from 'lucide-react';
 import { Header, AppTab } from './components/Header';
 import { EquipmentCard } from './components/EquipmentCard';
@@ -27,6 +29,8 @@ import { MaintenanceScheduleView } from './components/MaintenanceScheduleView';
 import { ServiceLogsView } from './components/ServiceLogsView';
 import { PushoverSettingsModal } from './components/PushoverSettingsModal';
 import { QRCodeModal } from './components/QRCodeModal';
+import { QRScannerModal } from './components/QRScannerModal';
+import { MobileNavigation } from './components/MobileNavigation';
 import { ProjectPlanningView } from './components/ProjectPlanningView';
 import { HomeDocumentsView } from './components/HomeDocumentsView';
 import { ToastContainer, ToastMessage } from './components/Toast';
@@ -115,6 +119,7 @@ export default function App() {
   const [isScanningPushover, setIsScanningPushover] = useState(false);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [qrTargetEquipment, setQrTargetEquipment] = useState<Equipment | null>(null);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
 
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState('');
@@ -672,10 +677,11 @@ export default function App() {
         projectsCount={activeProjectsCount}
         homeDocumentsCount={homeDocuments.length}
         pushoverConfig={settings}
+        onOpenScanner={() => setIsScannerOpen(true)}
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-8 pb-24 md:pb-8">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-24 text-zinc-500">
             <RefreshCw className="w-8 h-8 animate-spin text-orange-500 mb-3" />
@@ -687,22 +693,22 @@ export default function App() {
             {activeTab === 'appliances_electronics' && (
               <div className="space-y-6">
                 {/* Section Header Card */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 sm:p-5 bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-transparent border border-amber-500/20 rounded-2xl">
-                  <div className="flex items-center gap-3.5">
-                    <div className="w-11 h-11 rounded-xl bg-amber-500/20 text-amber-500 flex items-center justify-center font-bold shrink-0 shadow-xs">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 sm:p-5 bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-transparent border border-amber-500/20 rounded-2xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-amber-500/20 text-amber-500 flex items-center justify-center font-bold shrink-0 shadow-xs">
                       <Tv className="w-5 h-5" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
                         <h2 className="text-base sm:text-lg font-bold text-zinc-900 dark:text-zinc-100">
-                          Section 1: Appliances & Electronics
+                          Appliances & Electronics
                         </h2>
                         <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-500 border border-amber-500/30">
                           {appliancesList.length} items
                         </span>
                       </div>
-                      <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                        Kitchen appliances, laundry machines, refrigerators, dishwashers, and smart home electronics.
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 hidden xs:block">
+                        Kitchen appliances, laundry machines, refrigerators, and home electronics.
                       </p>
                     </div>
                   </div>
@@ -712,7 +718,7 @@ export default function App() {
                       setFormDefaultSection('appliances_electronics');
                       setIsEquipmentFormOpen(true);
                     }}
-                    className="px-3.5 py-2 text-xs font-semibold rounded-lg bg-orange-600 hover:bg-orange-500 text-white flex items-center gap-1.5 shadow-sm transition-colors shrink-0"
+                    className="w-full sm:w-auto justify-center px-3.5 py-2 text-xs font-semibold rounded-lg bg-orange-600 hover:bg-orange-500 text-white flex items-center gap-1.5 shadow-sm transition-colors shrink-0"
                   >
                     <Plus className="w-4 h-4" />
                     <span>Add Appliance</span>
@@ -720,63 +726,120 @@ export default function App() {
                 </div>
 
                 {/* Search, Filter & Quick Bar */}
-                <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 p-3 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
-                  {/* Search */}
-                  <div className="relative flex-1">
-                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search appliance, brand, model #, filter size, room..."
-                      className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-orange-500"
-                    />
-                  </div>
+                <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-2.5 sm:p-3 shadow-sm space-y-2.5">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+                    {/* Search */}
+                    <div className="relative flex-1">
+                      <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search appliance, brand, model #, filter size, room..."
+                        className="w-full pl-9 pr-16 py-2 text-xs rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                      />
+                      <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                        {searchQuery && (
+                          <button
+                            type="button"
+                            onClick={() => setSearchQuery('')}
+                            className="p-1 rounded-md text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+                            title="Clear search"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setIsScannerOpen(true)}
+                          className="p-1.5 rounded-md bg-orange-50 dark:bg-orange-950/50 hover:bg-orange-100 dark:hover:bg-orange-900/50 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-800 transition-colors"
+                          title="Scan Appliance QR Sticker"
+                          aria-label="Scan QR code"
+                        >
+                          <Camera className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
 
-                  {/* Filter Selects */}
-                  <div className="flex flex-wrap items-center gap-2">
-                    <select
-                      value={categoryFilter}
-                      onChange={(e) => setCategoryFilter(e.target.value)}
-                      className="px-2.5 py-1.5 text-xs rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 font-medium"
-                    >
-                      <option value="all">All Appliance Categories</option>
-                      {Object.entries(CATEGORIES)
-                        .filter(([key]) =>
-                          EQUIPMENT_SECTIONS.appliances_electronics.defaultCategories.includes(key as any)
-                        )
-                        .map(([key, val]) => (
-                          <option key={key} value={key}>
-                            {val.label}
+                    {/* Filter Selects & QR Action */}
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={categoryFilter}
+                        onChange={(e) => setCategoryFilter(e.target.value)}
+                        className="flex-1 sm:flex-none px-2.5 py-2 text-xs rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 font-medium"
+                      >
+                        <option value="all">All Categories</option>
+                        {Object.entries(CATEGORIES)
+                          .filter(([key]) =>
+                            EQUIPMENT_SECTIONS.appliances_electronics.defaultCategories.includes(key as any)
+                          )
+                          .map(([key, val]) => (
+                            <option key={key} value={key}>
+                              {val.label}
+                            </option>
+                          ))}
+                      </select>
+
+                      <select
+                        value={roomFilter}
+                        onChange={(e) => setRoomFilter(e.target.value)}
+                        className="flex-1 sm:flex-none px-2.5 py-2 text-xs rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 font-medium max-w-[140px] sm:max-w-[180px]"
+                      >
+                        <option value="all">All Rooms</option>
+                        {rooms.map((r) => (
+                          <option key={r} value={r}>
+                            {r}
                           </option>
                         ))}
-                    </select>
+                      </select>
 
-                    <select
-                      value={roomFilter}
-                      onChange={(e) => setRoomFilter(e.target.value)}
-                      className="px-2.5 py-1.5 text-xs rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 font-medium max-w-[180px]"
-                    >
-                      <option value="all">All Locations / Rooms</option>
-                      {rooms.map((r) => (
-                        <option key={r} value={r}>
-                          {r}
-                        </option>
-                      ))}
-                    </select>
-
-                    <button
-                      onClick={() => {
-                        setQrTargetEquipment(null);
-                        setIsQrModalOpen(true);
-                      }}
-                      className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 border border-zinc-300/80 dark:border-zinc-700 flex items-center gap-1.5 transition-colors shadow-xs shrink-0"
-                      title="Generate and print QR code labels"
-                    >
-                      <QrCode className="w-3.5 h-3.5 text-orange-500" />
-                      <span>QR Labels</span>
-                    </button>
+                      <button
+                        onClick={() => {
+                          setQrTargetEquipment(null);
+                          setIsQrModalOpen(true);
+                        }}
+                        className="hidden sm:flex px-3 py-2 text-xs font-semibold rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 border border-zinc-300/80 dark:border-zinc-700 items-center gap-1.5 transition-colors shadow-xs shrink-0"
+                        title="Generate and print QR code labels"
+                      >
+                        <QrCode className="w-3.5 h-3.5 text-orange-500" />
+                        <span>QR Labels</span>
+                      </button>
+                    </div>
                   </div>
+
+                  {/* Quick Room Filter Chips */}
+                  {rooms.length > 0 && (
+                    <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-1 border-t border-zinc-100 dark:border-zinc-800/80">
+                      <button
+                        type="button"
+                        onClick={() => setRoomFilter('all')}
+                        className={`px-2.5 py-1 rounded-md text-[11px] font-medium whitespace-nowrap transition-colors shrink-0 ${
+                          roomFilter === 'all'
+                            ? 'bg-orange-500/15 text-orange-600 dark:text-orange-400 font-bold border border-orange-500/30'
+                            : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                        }`}
+                      >
+                        All Rooms ({appliancesList.length})
+                      </button>
+                      {rooms.map((room) => {
+                        const count = appliancesList.filter((e) => e.locationRoom === room).length;
+                        return (
+                          <button
+                            key={room}
+                            type="button"
+                            onClick={() => setRoomFilter(roomFilter === room ? 'all' : room)}
+                            className={`px-2.5 py-1 rounded-md text-[11px] font-medium whitespace-nowrap transition-colors shrink-0 ${
+                              roomFilter === room
+                                ? 'bg-orange-500/15 text-orange-600 dark:text-orange-400 font-bold border border-orange-500/30'
+                                : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                            }`}
+                          >
+                            {room} ({count})
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 {/* Equipment Cards Grid */}
@@ -832,22 +895,22 @@ export default function App() {
             {activeTab === 'large_equipment' && (
               <div className="space-y-6">
                 {/* Section Header Card */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 sm:p-5 bg-gradient-to-r from-orange-500/10 via-amber-500/5 to-transparent border border-orange-500/20 rounded-2xl">
-                  <div className="flex items-center gap-3.5">
-                    <div className="w-11 h-11 rounded-xl bg-orange-500/20 text-orange-500 flex items-center justify-center font-bold shrink-0 shadow-xs">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 sm:p-5 bg-gradient-to-r from-orange-500/10 via-amber-500/5 to-transparent border border-orange-500/20 rounded-2xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-orange-500/20 text-orange-500 flex items-center justify-center font-bold shrink-0 shadow-xs">
                       <Tractor className="w-5 h-5" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
                         <h2 className="text-base sm:text-lg font-bold text-zinc-900 dark:text-zinc-100">
-                          Section 2: Large Equipment
+                          Large Equipment
                         </h2>
                         <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-orange-500/15 text-orange-500 border border-orange-500/30">
                           {largeEquipmentList.length} units
                         </span>
                       </div>
-                      <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                        HVAC heat pumps, water heaters, standby generators, lawnmowers, pressure washers & power machinery.
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 hidden xs:block">
+                        HVAC, heat pumps, water heaters, standby generators & lawn machinery.
                       </p>
                     </div>
                   </div>
@@ -857,7 +920,7 @@ export default function App() {
                       setFormDefaultSection('large_equipment');
                       setIsEquipmentFormOpen(true);
                     }}
-                    className="px-3.5 py-2 text-xs font-semibold rounded-lg bg-orange-600 hover:bg-orange-500 text-white flex items-center gap-1.5 shadow-sm transition-colors shrink-0"
+                    className="w-full sm:w-auto justify-center px-3.5 py-2 text-xs font-semibold rounded-lg bg-orange-600 hover:bg-orange-500 text-white flex items-center gap-1.5 shadow-sm transition-colors shrink-0"
                   >
                     <Plus className="w-4 h-4" />
                     <span>Add Large Equipment</span>
@@ -865,63 +928,120 @@ export default function App() {
                 </div>
 
                 {/* Search, Filter & Quick Bar */}
-                <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 p-3 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
-                  {/* Search */}
-                  <div className="relative flex-1">
-                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search HVAC, generator, lawnmower, brand, model #, room..."
-                      className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-orange-500"
-                    />
-                  </div>
+                <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-2.5 sm:p-3 shadow-sm space-y-2.5">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+                    {/* Search */}
+                    <div className="relative flex-1">
+                      <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search HVAC, generator, lawnmower, brand, model #, room..."
+                        className="w-full pl-9 pr-16 py-2 text-xs rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                      />
+                      <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                        {searchQuery && (
+                          <button
+                            type="button"
+                            onClick={() => setSearchQuery('')}
+                            className="p-1 rounded-md text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+                            title="Clear search"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setIsScannerOpen(true)}
+                          className="p-1.5 rounded-md bg-orange-50 dark:bg-orange-950/50 hover:bg-orange-100 dark:hover:bg-orange-900/50 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-800 transition-colors"
+                          title="Scan Equipment QR Sticker"
+                          aria-label="Scan QR code"
+                        >
+                          <Camera className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
 
-                  {/* Filter Selects */}
-                  <div className="flex flex-wrap items-center gap-2">
-                    <select
-                      value={categoryFilter}
-                      onChange={(e) => setCategoryFilter(e.target.value)}
-                      className="px-2.5 py-1.5 text-xs rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 font-medium"
-                    >
-                      <option value="all">All Large Equipment Categories</option>
-                      {Object.entries(CATEGORIES)
-                        .filter(([key]) =>
-                          EQUIPMENT_SECTIONS.large_equipment.defaultCategories.includes(key as any)
-                        )
-                        .map(([key, val]) => (
-                          <option key={key} value={key}>
-                            {val.label}
+                    {/* Filter Selects & QR Action */}
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={categoryFilter}
+                        onChange={(e) => setCategoryFilter(e.target.value)}
+                        className="flex-1 sm:flex-none px-2.5 py-2 text-xs rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 font-medium"
+                      >
+                        <option value="all">All Categories</option>
+                        {Object.entries(CATEGORIES)
+                          .filter(([key]) =>
+                            EQUIPMENT_SECTIONS.large_equipment.defaultCategories.includes(key as any)
+                          )
+                          .map(([key, val]) => (
+                            <option key={key} value={key}>
+                              {val.label}
+                            </option>
+                          ))}
+                      </select>
+
+                      <select
+                        value={roomFilter}
+                        onChange={(e) => setRoomFilter(e.target.value)}
+                        className="flex-1 sm:flex-none px-2.5 py-2 text-xs rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 font-medium max-w-[140px] sm:max-w-[180px]"
+                      >
+                        <option value="all">All Locations</option>
+                        {rooms.map((r) => (
+                          <option key={r} value={r}>
+                            {r}
                           </option>
                         ))}
-                    </select>
+                      </select>
 
-                    <select
-                      value={roomFilter}
-                      onChange={(e) => setRoomFilter(e.target.value)}
-                      className="px-2.5 py-1.5 text-xs rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 font-medium max-w-[180px]"
-                    >
-                      <option value="all">All Locations / Rooms</option>
-                      {rooms.map((r) => (
-                        <option key={r} value={r}>
-                          {r}
-                        </option>
-                      ))}
-                    </select>
-
-                    <button
-                      onClick={() => {
-                        setQrTargetEquipment(null);
-                        setIsQrModalOpen(true);
-                      }}
-                      className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 border border-zinc-300/80 dark:border-zinc-700 flex items-center gap-1.5 transition-colors shadow-xs shrink-0"
-                      title="Generate and print QR code labels"
-                    >
-                      <QrCode className="w-3.5 h-3.5 text-orange-500" />
-                      <span>QR Labels</span>
-                    </button>
+                      <button
+                        onClick={() => {
+                          setQrTargetEquipment(null);
+                          setIsQrModalOpen(true);
+                        }}
+                        className="hidden sm:flex px-3 py-2 text-xs font-semibold rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 border border-zinc-300/80 dark:border-zinc-700 items-center gap-1.5 transition-colors shadow-xs shrink-0"
+                        title="Generate and print QR code labels"
+                      >
+                        <QrCode className="w-3.5 h-3.5 text-orange-500" />
+                        <span>QR Labels</span>
+                      </button>
+                    </div>
                   </div>
+
+                  {/* Quick Room Filter Chips */}
+                  {rooms.length > 0 && (
+                    <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-1 border-t border-zinc-100 dark:border-zinc-800/80">
+                      <button
+                        type="button"
+                        onClick={() => setRoomFilter('all')}
+                        className={`px-2.5 py-1 rounded-md text-[11px] font-medium whitespace-nowrap transition-colors shrink-0 ${
+                          roomFilter === 'all'
+                            ? 'bg-orange-500/15 text-orange-600 dark:text-orange-400 font-bold border border-orange-500/30'
+                            : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                        }`}
+                      >
+                        All Locations ({largeEquipmentList.length})
+                      </button>
+                      {rooms.map((room) => {
+                        const count = largeEquipmentList.filter((e) => e.locationRoom === room).length;
+                        return (
+                          <button
+                            key={room}
+                            type="button"
+                            onClick={() => setRoomFilter(roomFilter === room ? 'all' : room)}
+                            className={`px-2.5 py-1 rounded-md text-[11px] font-medium whitespace-nowrap transition-colors shrink-0 ${
+                              roomFilter === room
+                                ? 'bg-orange-500/15 text-orange-600 dark:text-orange-400 font-bold border border-orange-500/30'
+                                : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                            }`}
+                          >
+                            {room} ({count})
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 {/* Large Equipment Cards Grid */}
@@ -1141,6 +1261,55 @@ export default function App() {
         allEquipment={equipmentList}
         onSelectEquipment={(eq) => {
           setSelectedEquipment(eq);
+        }}
+      />
+
+      {/* Mobile Bottom Thumb Navigation Bar */}
+      <MobileNavigation
+        activeTab={activeTab}
+        onTabChange={(tab) => {
+          setActiveTab(tab);
+          setCategoryFilter('all');
+        }}
+        onOpenScanner={() => setIsScannerOpen(true)}
+        onOpenAddEquipment={() => {
+          setEditingEquipment(null);
+          setFormDefaultSection(activeTab === 'large_equipment' ? 'large_equipment' : 'appliances_electronics');
+          setIsEquipmentFormOpen(true);
+        }}
+        onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenQRModal={() => {
+          setQrTargetEquipment(null);
+          setIsQrModalOpen(true);
+        }}
+        onTriggerPushoverScan={handleTriggerPushoverScan}
+        isScanningPushover={isScanningPushover}
+        appliancesCount={appliancesList.length}
+        largeEquipmentCount={largeEquipmentList.length}
+        projectsCount={activeProjectsCount}
+        homeDocumentsCount={homeDocuments.length}
+        overdueCount={overdueCount}
+        expiringWarrantyCount={expiringWarrantyCount}
+      />
+
+      {/* In-App Camera QR Code Scanner */}
+      <QRScannerModal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        equipmentList={equipmentList}
+        onSelectEquipment={(eq) => {
+          setSelectedEquipment(eq);
+          const sec = eq.section || getEquipmentSection(eq.category);
+          if (sec === 'appliances_electronics' || sec === 'large_equipment') {
+            setActiveTab(sec);
+          }
+          addToast('success', 'Appliance Opened', `Loaded "${eq.name}".`);
+        }}
+        onEquipmentNotFound={(scannedId) => {
+          setEditingEquipment(null);
+          setFormDefaultSection(activeTab === 'large_equipment' ? 'large_equipment' : 'appliances_electronics');
+          setIsEquipmentFormOpen(true);
+          addToast('info', 'New Appliance', `Registering new item for scanned code "${scannedId}".`);
         }}
       />
 

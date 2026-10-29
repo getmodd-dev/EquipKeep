@@ -559,10 +559,10 @@ export function EquipmentDetailModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-sm overflow-y-auto">
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden my-auto animate-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-5 bg-black/70 backdrop-blur-xs overflow-y-auto">
+      <div className="bg-white dark:bg-zinc-900 border-t sm:border border-zinc-200 dark:border-zinc-800 rounded-t-2xl sm:rounded-2xl w-full max-w-4xl h-[100dvh] sm:h-auto sm:max-h-[92vh] flex flex-col shadow-2xl overflow-hidden my-0 sm:my-auto animate-in slide-in-from-bottom-3 sm:zoom-in-95 duration-150">
         {/* Modal Header */}
-        <div className="p-5 border-b border-zinc-200 dark:border-zinc-800 flex items-start justify-between gap-4 bg-zinc-50 dark:bg-zinc-950/60">
+        <div className="p-3.5 sm:p-5 border-b border-zinc-200 dark:border-zinc-800 flex items-start justify-between gap-3 bg-zinc-50 dark:bg-zinc-950/60 shrink-0">
           <div className="flex items-start gap-3.5 flex-1 min-w-0">
             {/* Appliance Photo / Avatar with Local Upload */}
             <div className="relative group shrink-0">
@@ -659,18 +659,18 @@ export function EquipmentDetailModal({
             <button
               type="button"
               onClick={() => setIsFindManualOpen(true)}
-              className="px-2.5 py-1.5 rounded-lg bg-orange-50 dark:bg-orange-950/40 hover:bg-orange-100 dark:hover:bg-orange-900/60 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-800 transition-colors flex items-center gap-1.5 text-xs font-semibold"
+              className="hidden sm:inline-flex px-2.5 py-1.5 rounded-lg bg-orange-50 dark:bg-orange-950/40 hover:bg-orange-100 dark:hover:bg-orange-900/60 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-800 transition-colors items-center gap-1.5 text-xs font-semibold"
               title="Search and find appliance manuals online"
             >
               <Search className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400" />
-              <span className="hidden sm:inline">Find Manual</span>
+              <span>Find Manual</span>
             </button>
 
             {/* Mute/Enable Alerts Quick Toggle */}
             <button
               type="button"
               onClick={handleToggleAlerts}
-              className={`px-2.5 py-1.5 rounded-lg border transition-colors flex items-center gap-1.5 text-xs font-semibold ${
+              className={`hidden sm:inline-flex px-2.5 py-1.5 rounded-lg border transition-colors items-center gap-1.5 text-xs font-semibold ${
                 isAlertsMuted
                   ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 hover:text-orange-600'
                   : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
@@ -689,21 +689,22 @@ export function EquipmentDetailModal({
               <button
                 type="button"
                 onClick={() => onOpenQRCode(equipment)}
-                className="px-2.5 py-1.5 rounded-lg bg-orange-50 dark:bg-orange-950/40 hover:bg-orange-100 dark:hover:bg-orange-900/60 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-800 transition-colors flex items-center gap-1.5 text-xs font-semibold"
+                className="hidden sm:inline-flex px-2.5 py-1.5 rounded-lg bg-orange-50 dark:bg-orange-950/40 hover:bg-orange-100 dark:hover:bg-orange-900/60 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-800 transition-colors items-center gap-1.5 text-xs font-semibold"
                 title="Create scannable QR code & printable label"
               >
                 <QrCode className="w-4 h-4 text-orange-600 dark:text-orange-400" />
-                <span className="hidden sm:inline">QR Code Label</span>
+                <span>QR Label</span>
               </button>
             )}
 
             <button
               onClick={() => onEdit(equipment)}
-              className="p-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition-colors"
+              className="hidden sm:inline-flex p-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition-colors"
               title="Edit Equipment"
             >
               <Edit2 className="w-4 h-4" />
             </button>
+
             <button
               onClick={() => {
                 if (confirm(`Are you sure you want to delete ${equipment.name}?`)) {
@@ -716,9 +717,10 @@ export function EquipmentDetailModal({
             >
               <Trash2 className="w-4 h-4" />
             </button>
+
             <button
               onClick={onClose}
-              className="p-2 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-500 dark:text-zinc-400 transition-colors"
+              className="p-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 transition-colors"
               aria-label="Close"
             >
               <X className="w-5 h-5" />
@@ -2373,6 +2375,38 @@ export function EquipmentDetailModal({
               )}
             </div>
           )}
+        </div>
+
+        {/* Sticky Mobile Action Footer */}
+        <div className="p-3 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 flex items-center justify-between gap-2 pb-safe sm:hidden shrink-0">
+          <button
+            type="button"
+            onClick={() => onLogService(equipment)}
+            className="flex-1 py-2.5 px-3 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-semibold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-98 transition-transform"
+          >
+            <Wrench className="w-3.5 h-3.5" />
+            <span>Log Service</span>
+          </button>
+
+          {onOpenQRCode && (
+            <button
+              type="button"
+              onClick={() => onOpenQRCode(equipment)}
+              className="py-2.5 px-3 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-semibold text-xs border border-zinc-200 dark:border-zinc-700 flex items-center gap-1.5"
+            >
+              <QrCode className="w-3.5 h-3.5 text-orange-500" />
+              <span>Label</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => onEdit(equipment)}
+            className="py-2.5 px-3 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-semibold text-xs border border-zinc-200 dark:border-zinc-700 flex items-center gap-1"
+          >
+            <Edit2 className="w-3.5 h-3.5" />
+            <span>Edit</span>
+          </button>
         </div>
       </div>
 

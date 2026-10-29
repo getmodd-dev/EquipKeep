@@ -140,23 +140,29 @@ export function MaintenanceScheduleView({
       </div>
 
       {/* Metric summary */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="p-4 rounded-xl bg-rose-50/60 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/60">
-          <span className="text-xs font-semibold text-rose-700 dark:text-rose-300">Overdue Tasks</span>
-          <p className="text-2xl font-bold text-rose-600 dark:text-rose-400 mt-1">{overdueList.length}</p>
-          <span className="text-[11px] text-zinc-500">Requires immediate attention</span>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
+        <div className="p-3.5 sm:p-4 rounded-xl bg-rose-50/60 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/60 flex sm:flex-col justify-between sm:justify-start items-center sm:items-start">
+          <div>
+            <span className="text-xs font-semibold text-rose-700 dark:text-rose-300">Overdue Tasks</span>
+            <span className="text-[11px] text-zinc-500 block sm:mt-0.5">Requires immediate attention</span>
+          </div>
+          <p className="text-2xl font-bold text-rose-600 dark:text-rose-400 sm:mt-1">{overdueList.length}</p>
         </div>
 
-        <div className="p-4 rounded-xl bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/60">
-          <span className="text-xs font-semibold text-amber-700 dark:text-amber-300">Due Next 30 Days</span>
-          <p className="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">{dueSoonList.length}</p>
-          <span className="text-[11px] text-zinc-500">Order filters / prepare parts</span>
+        <div className="p-3.5 sm:p-4 rounded-xl bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/60 flex sm:flex-col justify-between sm:justify-start items-center sm:items-start">
+          <div>
+            <span className="text-xs font-semibold text-amber-700 dark:text-amber-300">Due Next 30 Days</span>
+            <span className="text-[11px] text-zinc-500 block sm:mt-0.5">Order filters / parts</span>
+          </div>
+          <p className="text-2xl font-bold text-amber-600 dark:text-amber-400 sm:mt-1">{dueSoonList.length}</p>
         </div>
 
-        <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
-          <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-400">Total Tasks Monitored</span>
-          <p className="text-2xl font-bold text-zinc-900 dark:text-white mt-1">{allTasks.length}</p>
-          <span className="text-[11px] text-zinc-500">Across {equipmentList.length} appliances</span>
+        <div className="p-3.5 sm:p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex sm:flex-col justify-between sm:justify-start items-center sm:items-start">
+          <div>
+            <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-400">Total Tasks</span>
+            <span className="text-[11px] text-zinc-500 block sm:mt-0.5">Across {equipmentList.length} items</span>
+          </div>
+          <p className="text-2xl font-bold text-zinc-900 dark:text-white sm:mt-1">{allTasks.length}</p>
         </div>
       </div>
 
