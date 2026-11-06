@@ -26,9 +26,10 @@ interface EquipmentCardProps {
   onLogService: (equipment: Equipment) => void;
   onEdit: (equipment: Equipment) => void;
   onOpenQRCode?: (equipment: Equipment) => void;
+  isCompact?: boolean;
 }
 
-export function EquipmentCard({ equipment, onSelect, onLogService, onEdit, onOpenQRCode }: EquipmentCardProps) {
+export function EquipmentCard({ equipment, onSelect, onLogService, onEdit, onOpenQRCode, isCompact = false }: EquipmentCardProps) {
   const [copiedSerial, setCopiedSerial] = useState(false);
 
   const categoryMeta = CATEGORIES[equipment.category] || CATEGORIES.other;
@@ -59,6 +60,92 @@ export function EquipmentCard({ equipment, onSelect, onLogService, onEdit, onOpe
     setCopiedSerial(true);
     setTimeout(() => setCopiedSerial(false), 2000);
   };
+
+  // Compact / Minimized tile view
+  if (isCompact) {
+    return (
+      <div
+        onClick={() => onSelect(equipment)}
+        className="group relative bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-3 sm:p-3.5 shadow-xs hover:shadow-md hover:border-orange-500/50 dark:hover:border-orange-500/50 transition-all cursor-pointer flex items-center justify-between gap-3 active:scale-[0.99] touch-manipulation"
+      >
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          {/* Category Dot / Icon */}
+          <div
+            className={`w-9 h-9 rounded-lg shrink-0 flex items-center justify-center font-bold text-xs border ${categoryMeta.bg} ${categoryMeta.text} ${categoryMeta.border}`}
+          >
+            <Tag className="w-4 h-4" />
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <h3 className="font-bold text-sm text-zinc-900 dark:text-zinc-100 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors truncate">
+                {equipment.name}
+              </h3>
+              {nextTask?.isOverdue && (
+                <span className="shrink-0 px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-rose-500/15 text-rose-500 border border-rose-500/30 flex items-center gap-1">
+                  <AlertTriangle className="w-2.5 h-2.5" />
+                  <span>Due</span>
+                </span>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+              <span className="font-medium text-zinc-700 dark:text-zinc-300 truncate max-w-[140px]">
+                {equipment.brand}
+              </span>
+              <span className="text-zinc-400">•</span>
+              <span className="truncate max-w-[120px] font-mono text-[11px]">
+                {equipment.modelNumber || 'No Mod #'}
+              </span>
+              {equipment.locationRoom && (
+                <>
+                  <span className="text-zinc-400">•</span>
+                  <span className="truncate max-w-[110px] text-zinc-500">
+                    {equipment.locationRoom}
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Compact Right-Side Actions */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {onOpenQRCode && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenQRCode(equipment);
+              }}
+              className="p-1.5 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 transition-colors"
+              title="Print QR Code Label"
+              aria-label="QR Code"
+            >
+              <QrCode className="w-3.5 h-3.5 text-orange-500" />
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onLogService(equipment);
+            }}
+            className="p-1.5 px-2.5 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 text-orange-600 dark:text-orange-400 border border-orange-500/30 text-xs font-semibold flex items-center gap-1 transition-colors"
+            title="Log Service"
+          >
+            <Wrench className="w-3 h-3" />
+            <span className="hidden sm:inline">Log</span>
+          </button>
+
+          <span className="text-zinc-400 group-hover:text-orange-500 group-hover:translate-x-0.5 transition-all p-0.5">
+            <ChevronRight className="w-4 h-4" />
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

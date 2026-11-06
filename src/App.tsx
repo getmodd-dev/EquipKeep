@@ -18,6 +18,8 @@ import {
   ClipboardList,
   Camera,
   X,
+  LayoutGrid,
+  Rows3,
 } from 'lucide-react';
 import { Header, AppTab } from './components/Header';
 import { EquipmentCard } from './components/EquipmentCard';
@@ -125,6 +127,24 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [roomFilter, setRoomFilter] = useState<string>('all');
+  // Tile density view state (Standard full cards vs Minimized compact list tiles)
+  const [isCompactTiles, setIsCompactTiles] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('equipkeep_tile_compact') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleCompactTiles = () => {
+    setIsCompactTiles((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('equipkeep_tile_compact', String(next));
+      } catch {}
+      return next;
+    });
+  };
 
   // Toasts
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
@@ -804,6 +824,31 @@ export default function App() {
                         <QrCode className="w-3.5 h-3.5 text-orange-500" />
                         <span>QR Labels</span>
                       </button>
+
+                      {/* Tile View Density Minimize/Expand Toggle */}
+                      <button
+                        type="button"
+                        onClick={toggleCompactTiles}
+                        className={`px-2.5 py-2 text-xs font-semibold rounded-lg border transition-all flex items-center gap-1.5 shrink-0 ${
+                          isCompactTiles
+                            ? 'bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/30'
+                            : 'bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 border-zinc-300/80 dark:border-zinc-700'
+                        }`}
+                        title={isCompactTiles ? 'Switch to Standard Expanded Cards' : 'Minimize Tiles (Compact List View)'}
+                        aria-label="Toggle minimized tile view"
+                      >
+                        {isCompactTiles ? (
+                          <>
+                            <Rows3 className="w-3.5 h-3.5 text-orange-500" />
+                            <span className="hidden xs:inline">Minimized</span>
+                          </>
+                        ) : (
+                          <>
+                            <LayoutGrid className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
+                            <span className="hidden xs:inline">Minimize</span>
+                          </>
+                        )}
+                      </button>
                     </div>
                   </div>
 
@@ -864,11 +909,12 @@ export default function App() {
                     </button>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  <div className={isCompactTiles ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"}>
                     {filteredEquipment.map((eq) => (
                       <EquipmentCard
                         key={eq.id}
                         equipment={eq}
+                        isCompact={isCompactTiles}
                         onSelect={(item) => setSelectedEquipment(item)}
                         onOpenQRCode={(item) => {
                           setQrTargetEquipment(item);
@@ -1006,6 +1052,31 @@ export default function App() {
                         <QrCode className="w-3.5 h-3.5 text-orange-500" />
                         <span>QR Labels</span>
                       </button>
+
+                      {/* Tile View Density Minimize/Expand Toggle */}
+                      <button
+                        type="button"
+                        onClick={toggleCompactTiles}
+                        className={`px-2.5 py-2 text-xs font-semibold rounded-lg border transition-all flex items-center gap-1.5 shrink-0 ${
+                          isCompactTiles
+                            ? 'bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/30'
+                            : 'bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 border-zinc-300/80 dark:border-zinc-700'
+                        }`}
+                        title={isCompactTiles ? 'Switch to Standard Expanded Cards' : 'Minimize Tiles (Compact List View)'}
+                        aria-label="Toggle minimized tile view"
+                      >
+                        {isCompactTiles ? (
+                          <>
+                            <Rows3 className="w-3.5 h-3.5 text-orange-500" />
+                            <span className="hidden xs:inline">Minimized</span>
+                          </>
+                        ) : (
+                          <>
+                            <LayoutGrid className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
+                            <span className="hidden xs:inline">Minimize</span>
+                          </>
+                        )}
+                      </button>
                     </div>
                   </div>
 
@@ -1066,11 +1137,12 @@ export default function App() {
                     </button>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  <div className={isCompactTiles ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"}>
                     {filteredEquipment.map((eq) => (
                       <EquipmentCard
                         key={eq.id}
                         equipment={eq}
+                        isCompact={isCompactTiles}
                         onSelect={(item) => setSelectedEquipment(item)}
                         onOpenQRCode={(item) => {
                           setQrTargetEquipment(item);

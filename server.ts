@@ -2494,6 +2494,12 @@ async function startServer() {
     console.error('[Storage] Error synchronizing initial folders:', err);
   }
 
+  // Serve public assets (favicon.ico, apple-touch-icon.png, icon.svg, manifest.json)
+  const publicPath = path.join(process.cwd(), 'public');
+  if (fs.existsSync(publicPath)) {
+    app.use(express.static(publicPath));
+  }
+
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       server: { middlewareMode: true },
